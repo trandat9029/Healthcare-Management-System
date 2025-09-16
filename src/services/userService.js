@@ -44,7 +44,7 @@ let handleUserLogin = (email, password) =>{
                 //user already exist
                 let user = await db.User.findOne({
                     where: {email: email},
-                    attributes: ['email', 'roleId', 'password'],
+                    attributes: ['email', 'roleId', 'password', 'lastName', 'firstName'],
                     raw: true,
                 });
                 if(user){
@@ -120,10 +120,10 @@ let createNewUser = (data) =>{
                     lastName: data.lastName,
                     address: data.address,
                     phoneNumber: data.phoneNumber ?? data.phone ,
-                    gender: data.gender === '1' ? true : false,
+                    gender: data.gender,
                     // image: data.image,
                     roleId: data.roleId,
-                    // positionId: data.positionId,
+                    positionId: data.positionId,
                 })
                 resolve({
                     errCode: 0,
@@ -164,7 +164,7 @@ let deleteUser = (userId) =>{
 let updateUserData = (data) =>{
     return new Promise( async (resolve, reject) =>{
         try {
-            if(!data.id){
+            if(!data.id || !data.roleId || !data.positionId || !data.gender){
                 resolve({
                     errCode: 2,
                     errMessage: 'Missing require parameter!',
@@ -178,6 +178,10 @@ let updateUserData = (data) =>{
                 user.firstName = data.firstName;
                 user.lastName = data.lastName;
                 user.address = data.address;
+                user.phoneNumber = data.phoneNumber;
+                user.roleId = data.roleId;
+                user.positionId = data.positionId;
+                user.gender = data.gender;
 
                 await user.save();
 
