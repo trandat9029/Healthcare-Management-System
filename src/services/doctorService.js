@@ -1,5 +1,6 @@
 import { where } from "sequelize";
 import db from "../models";
+import { raw } from "body-parser";
 
 let getTopDoctorHome = (limitInput) =>{
     return new Promise( async (resolve, reject) =>{
@@ -53,19 +54,35 @@ let getAllDoctors = () =>{
 let saveDetailInfoDoctor = (inputData) =>{
     return new Promise( async (resolve, reject) => {
         try {
-            if(!inputData.doctorId || !inputData.contentHTML || !inputData.contentMarkdown){
+            if(!inputData.doctorId || !inputData.contentHTML || !inputData.contentMarkdown || !inputData.action){
                 resolve({
                     errCode: 1,
                     errMessage: 'Missing parameter'
                 })
             }else{
-                await db.Markdown.create({
-                    contentHTML: inputData.contentHTML,
-                    contentMarkdown: inputData.contentMarkdown,
-                    description: inputData.description,
-                    doctorId: inputData.doctorId,
+                if(inputData.action === 'CREATE'){
+                    await db.Markdown.create({
+                        contentHTML: inputData.contentHTML,
+                        contentMarkdown: inputData.contentMarkdown,
+                        description: inputData.description,
+                        doctorId: inputData.doctorId,
+                    
+                    })
+                }else if(inputData.action === 'EDIT'){
+                    let doctorMarkdown = await db.Markdown.findOne({
+                        where: { doctorId: inputData.doctorId },
+                        raw: false
+                    })
+
+                    if(doctorMarkdown){
+                        doctorMarkdown.contentHTML = inputData.contentHTML;
+                        doctorMarkdown.contentMarkdown = inputData.contentMarkdown;
+                        doctorMarkdown.description = inputData.description;
+
+                        await doctorMarkdown.save()
+                    }
+                }
                 
-                })
 
                 resolve({
                     errCode: 0,
@@ -90,7 +107,7 @@ let getDetailDoctorByIdService = (inputId) =>{
                 let data = await db.User.findOne({
                     where: { id: inputId },
                     attributes:{
-                        exclude: ['password', 'image']
+                        exclude: ['password']
                     },
                     
                     include: [
@@ -102,9 +119,15 @@ let getDetailDoctorByIdService = (inputId) =>{
                             model: db.Allcode, as: 'positionData', attributes: ['valueEn', 'valueVi']
                         },
                     ],
-                    raw: true,
+                    raw: false,
                     nest: true
                 })
+
+                if(data && data.image ){
+                    data.image = new Buffer(data.image, 'base64').toString('binary');
+                }
+
+                if(!data) data = {};
 
                 resolve({
                     errCode: 0,
