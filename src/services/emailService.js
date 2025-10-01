@@ -2,27 +2,6 @@ require('dotenv').config();
 import nodemailer from 'nodemailer'
 // const nodemailer = require("nodemailer")
 
-// async function main() {
-//     let transporter = nodemailer.createTransport({
-//         host: "smtp.ethereal.email",
-//         port: 587,
-//         secure: false,
-//         auth: {
-//             user: createTestAccount.user,
-//             user: createTestAccount.pass,
-//         },
-
-//     });
-
-//     let info = await transporter.sendMail({
-//         from: '"Fred Foo " <foo@example.com>',
-//         to: "bar@example.com, baz@example.com",
-//         subject: "hello",
-//         text: "hello world",
-//         html: "<b>Hello world</b>"
-//     })
-// }
-
 
 let sendSimpleEmail = async (dataSend) =>{
     let transporter = nodemailer.createTransport({
@@ -40,7 +19,16 @@ let sendSimpleEmail = async (dataSend) =>{
         from: '"Onizuka " <tranledatvp@gmail.com>',
         to: dataSend.receiverEmail,
         subject: "Thông tin đặt lịch khám bệnh",
-        html: `
+        html: getBodyHTMLEmail(dataSend),
+    })
+}
+
+
+let getBodyHTMLEmail = (dataSend) =>{
+    let result = '';
+
+    if(dataSend.language === 'vi'){
+        result = `
             <h3>Xin chào ${dataSend.patientName}!</h3> 
             <p>Bạn nhận được email này vì đã đặt lịch khám bệnh online trên Booking Health</p>
             <p>Thông tin đặt lịch khám bệnh: </p>
@@ -52,8 +40,25 @@ let sendSimpleEmail = async (dataSend) =>{
                 <a href=${dataSend.redirectLink} target="_blank">Click here</a>
             </div>
             <div>Xin chân thành cảm ơn</div>
-        `,
-    })
+        `
+    }
+    if(dataSend.language === 'en'){
+        result = `
+            <h3>Hello ${dataSend.patientName}!</h3>
+            <p>You are receiving this email because you have booked an online medical appointment on Booking Health.</p>
+            <p>Medical appointment information:</p>
+            <div><b>Time: ${dataSend.time}</b></div>
+            <div><b>Doctor: ${dataSend.doctorName}</b></div>
+
+            <p>If the information above is correct, please click the link below to confirm and complete the appointment booking process.</p>
+            <div>
+                <a href=${dataSend.redirectLink} target="_blank">Click here</a>
+            </div>
+            <div>Thank you sincerely!</div>
+        `
+    }
+
+    return result;
 }
 
 module.exports = {
