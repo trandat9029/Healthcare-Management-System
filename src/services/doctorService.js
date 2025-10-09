@@ -262,7 +262,6 @@ let bulkCreateScheduleService = (data) =>{
     })
 }
 
-
 let getScheduleByDateService = (doctorId, date) =>{
     return new Promise(async (resolve, reject) => {
         try {
