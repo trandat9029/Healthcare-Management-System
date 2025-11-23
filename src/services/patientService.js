@@ -15,13 +15,13 @@ let buildUrlEmail = (doctorId, token) =>{
 let postBookAppointmentService = (data) =>{
     return new Promise( async (resolve, reject) =>{
         try {
-            if(!data.email || !data.doctorId || !data.timeType || !data.date || !data.fullName){
+            if(!data.email || !data.doctorId || !data.timeType || !data.date || !data.fullName || !data.address || !data.selectedGender){
                 resolve({
                     errCode: 1,
                     errMessage: 'Missing required parameter!',
                 })
             }else{
-
+                console.log('check data', data)
                 let token = uuidv4(); // ⇨ '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d'
 
                 await emailService.sendSimpleEmail({
@@ -38,10 +38,13 @@ let postBookAppointmentService = (data) =>{
                     where: { email : data.email },
                     defaults: {
                         email: data.email,
-                        roleId: 'R3'
+                        roleId: 'R3',
+                        gender : data.selectedGender,
+                        address: data.address,
+                        firstName: data.fullName,
+                        
                     }
                 });
-                console.log('check user: ', user[0]);
                 if(user && user[0]){
                     await db.Booking.findOrCreate({
                         where: { patientId : user[0].id },
