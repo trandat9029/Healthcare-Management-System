@@ -1,6 +1,6 @@
 import { where } from "sequelize";
 import db from "../models";
-import { raw } from "body-parser";
+import emailService from "./emailService"
 require('dotenv').config();
 import _, { reject } from "lodash";
 
@@ -434,6 +434,46 @@ let getListPatientForDoctorService = (doctorId, date) =>{
     })
 }
 
+let SendRemedy = (data) =>{
+    return new Promise( async (resolve, reject) =>{
+        try {
+            if(!data.email || !data.doctorId || !data.patientId || !data.timeType){
+                resolve({
+                    errCode: 1,
+                    errMessage: 'Missing required parameter!',
+                })
+            }else{
+                
+                //update patient status
+                let appointment = await db.Booking.findOne({
+                    where: { 
+                        doctorId: data.doctorId,
+                        patientId: data.patientId,
+                        timeType: data.timeType,
+                        statusId: 'S2', 
+                    },
+                    raw: false,
+                })
+
+                if(appointment){
+                    appointment.statusId = 'S3';
+                    await appointment.save();
+                }
+
+                //send email remedy
+                await emailService.sendAttachment(data);
+
+                resolve({
+                    errCode: 0,
+                    errMessage: 'Ok'
+                })
+            }
+        } catch (error) {
+            reject(error)
+        }
+    })
+}
+
 module.exports = {
     getTopDoctorHome: getTopDoctorHome,
     getAllDoctors: getAllDoctors,
@@ -444,5 +484,5 @@ module.exports = {
     getExtraInfoDoctorByIdService: getExtraInfoDoctorByIdService,
     getProfileDoctorByIdService: getProfileDoctorByIdService,
     getListPatientForDoctorService: getListPatientForDoctorService,
-
+    SendRemedy: SendRemedy,
 }

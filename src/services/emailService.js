@@ -27,7 +27,7 @@ let sendSimpleEmail = async (dataSend) =>{
 let getBodyHTMLEmail = (dataSend) =>{
     let result = '';
 
-    if(dataSend.language === 'vi'){
+     if(dataSend.language === 'vi'){
         result = `
             <h3>Xin chào ${dataSend.patientName}!</h3> 
             <p>Bạn nhận được email này vì đã đặt lịch khám bệnh online trên Booking Health</p>
@@ -61,7 +61,71 @@ let getBodyHTMLEmail = (dataSend) =>{
     return result;
 }
 
+
+
+let getBodyHTMLEmailRemedy = (dataSend) =>{
+    let result = '';
+
+    if(dataSend.language === 'vi'){
+        result = `
+            <h3>Xin chào ${dataSend.patientName}!</h3> 
+            <p>Bạn nhận được email này vì đã đặt lịch khám bệnh online trên Booking Health và đã hoàn thành khám bệnh </p>
+            <p>Thông tin đơn thuốc/hóa đơn được gửi trong file đính kèm </p>
+            
+            <div>Xin chân thành cảm ơn</div>
+        `
+    }
+    if(dataSend.language === 'en'){
+        result = `
+            <h3>Hello ${dataSend.patientName}!</h3>
+            <p>You are receiving this email because you have booked an online medical appointment on Booking Health.</p>
+            <p>Medical appointment information:</p>
+            
+            
+            <div>Thank you sincerely!</div>
+        `
+    }
+
+    return result;
+}
+
+let sendAttachment = async (dataSend) =>{
+    return new Promise( async (resolve, reject) =>{
+
+        try {
+            let transporter = nodemailer.createTransport({
+                host: "smtp.gmail.com",
+                port: 587,
+                secure: false,
+                auth: {
+                    user: process.env.EMAIL_APP,
+                    pass: process.env.EMAIL_APP_PASSWORD,
+                },
+
+            });
+
+            let info = await transporter.sendMail({
+                from: '"Onizuka " <tranledatvp@gmail.com>',
+                to: dataSend.email,
+                subject: "Kết quả đặt lịch khám bệnh",
+                html: getBodyHTMLEmailRemedy(dataSend),
+                attachments: [
+                    {
+                        filename: `remedy-${dataSend.patientId}-${new Date().getTime()}.png`,
+                        content: dataSend.imgBase64.split("base64,")[1],
+                        encoding: 'base64'
+                    }
+                ],
+            })
+            resolve();
+        } catch (error) {
+            reject(error);
+        }
+    }) 
+}
+
+
 module.exports = {
     sendSimpleEmail: sendSimpleEmail,
-
+    sendAttachment: sendAttachment,
 }
