@@ -9,13 +9,15 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+      // Handbook.belongsTo(models.Allcode, {foreignKey: 'statusId', targetKey: 'keyMap', as: 'statusTypeData'});
     }
   }
   Handbook.init(
     {
       name: DataTypes.STRING,
       author: DataTypes.STRING,
-      datePublic: DataTypes.STRING,
+      datePublish: DataTypes.STRING,
+      status: DataTypes.BOOLEAN,
       descriptionHTML: DataTypes.TEXT,
       descriptionMarkdown: DataTypes.TEXT,
       image: DataTypes.TEXT,

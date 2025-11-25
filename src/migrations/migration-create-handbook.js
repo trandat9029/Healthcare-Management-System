@@ -15,10 +15,12 @@ module.exports = {
       author: {
         type: Sequelize.STRING
       },
-      datePublic: {
+      datePublish: {
         type: Sequelize.STRING
       },
-      
+      status: {
+        type: Sequelize.BOOLEAN
+      },
       descriptionHTML: {
         type: Sequelize.TEXT
       },

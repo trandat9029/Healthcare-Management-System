@@ -7,11 +7,19 @@ const router = express.Router();
 
 // Handbook routes
 
-router.post('/handbook', handbookController.handleCreateHandbook);
+router.post('/', handbookController.handleCreateHandbook);
 
-router.get('/handbooks', handbookController.handleGetAllHandbook);
+router.put('/', handbookController.handleEditHandbook);
 
-router.get('/handbook/detail', handbookController.handleGetDetailHandbookById);
+router.delete('/', handbookController.handleDeleteHandbook);
+
+router.get('/all', handbookController.handleGetAllHandbook);
+
+router.put('/posting', handbookController.handlePostHandbook);
+
+router.get('/list_posted', handbookController.handleGetListPostHandbook);
+
+router.get('/detail', handbookController.handleGetDetailHandbookById);
 
 
 export default router;
