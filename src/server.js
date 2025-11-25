@@ -4,18 +4,12 @@ import viewEngine from './config/viewEngine';
 import initWebRoutes from './routes/web';
 import connectDB from './config/connectDB';
 import cors from 'cors'
+import routes from './routes/index'
+
 
 require('dotenv').config();
 
 let app = express();
-
-// app.use(function (req, res, next){
-//     res.setHeader('Access-Control-Allow-Origin', process.env.FRONTEND_ORIGIN );
-//     res.setHeader('Access-Control-Allow-Credentials', true);
-//     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
-//     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-//     next();
-// })
 
 app.use(cors({ origin: true }));
 
@@ -27,6 +21,10 @@ app.use(bodyParser.json({limit: '50mb'}));
 app.use(bodyParser.urlencoded({limit: '50mb', extended: true}));
 
 viewEngine(app);
+
+
+// Dùng route tổng hợp từ index.js
+app.use(routes);
 initWebRoutes(app);
 
 connectDB();
