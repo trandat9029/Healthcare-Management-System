@@ -35,26 +35,56 @@ let getTopDoctorHome = (limitInput) =>{
     })
 }
 
-let getAllDoctors = () =>{
-    return new Promise( async (resolve, reject) =>{
+// doctorService.js
+let getAllDoctors = ({ page, limit, sortBy, sortOrder }) => {
+    return new Promise(async (resolve, reject) => {
         try {
-            let doctors = await db.User.findAll({
-                where: { roleId: 'R2' },
-                attributes: {
-                    exclude: ['password', 'image']
+        const pageNumber = Number(page) || 1;
+        const pageSize = Number(limit) || 10;
+        const offset = (pageNumber - 1) * pageSize;
+
+        const allowedSortField = {
+            email: 'email',
+            firstName: 'firstName',
+            lastName: 'lastName',
+            createdAt: 'createdAt',
+        };
+
+        const sortField = allowedSortField[sortBy] || 'createdAt';
+        const sortDirection =
+            String(sortOrder).toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
+
+        let doctors = await db.User.findAndCountAll({
+            where: { roleId: 'R2' },
+            attributes: {
+                exclude: ['password', 'image'],
+            },
+            include: [
+                {
+                    model: db.Allcode,
+                    as: 'positionData',
+                    attributes: ['valueVi', 'valueEn'],
                 },
+                {
+                    model: db.Allcode,
+                    as: 'roleData',
+                    attributes: ['valueVi', 'valueEn'],
+                },
+            ],
+            raw: true,
+            nest: true,
+            limit: pageSize,
+            offset,
+            order: [[sortField, sortDirection]],
+            distinct: true,
+        });
 
-            })
-            resolve({
-                errCode: 0,
-                data: doctors
-            })
-
+        resolve(doctors);
         } catch (error) {
-            reject(error);
+        reject(error);
         }
-    })
-}
+    });
+};
 
 let checkRequiredFields = (inputData) =>{
     let arrFields = ['doctorId', 'contentHTML', 'contentMarkdown', 'action', 'selectedPrice', 'selectedPayment', 'selectedProvince', 'nameClinic', 'addressClinic', 'note', 'specialtyId'];

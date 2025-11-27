@@ -30,29 +30,49 @@ let createClinicService = (data) =>{
     })
 }
 
-let getAllClinicService = () =>{
-    return new Promise( async (resolve, reject) =>{
-        try {
-            let data = await db.Clinic.findAll({
+// services/clinicService.js
 
-            });
-            if(data && data.length > 0){
-                data.map(item =>{
-                    item.image = new Buffer(item.image, 'base64').toString('binary');
-                    return item;
-                }) 
-            }
-            
-            resolve({
-                errCode: 0,
-                errMessage: 'OK',
-                data
-            })
-        } catch (error) {
-            reject(error)
-        }
-    })
-}
+let getAllClinicService = (page, limit, sortBy, sortOrder) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      page = +page || 1;
+      limit = +limit || 8;
+      sortBy = sortBy || 'name';
+      sortOrder = sortOrder === 'DESC' ? 'DESC' : 'ASC';
+
+      let offset = (page - 1) * limit;
+
+      let result = await db.Clinic.findAndCountAll({
+        offset,
+        limit,
+        order: [[sortBy, sortOrder]],
+      });
+
+      let clinics = result.rows || [];
+      if (clinics.length > 0) {
+        clinics = clinics.map((item) => {
+          if (item.image) {
+            item.image = Buffer.from(item.image, 'base64').toString('binary');
+          }
+          return item;
+        });
+      }
+
+      resolve({
+        errCode: 0,
+        errMessage: 'OK',
+        data: clinics,
+        total: result.count,
+        page,
+        limit,
+      });
+    } catch (error) {
+      reject(error);
+    }
+  });
+};
+
+
 
 let getDetailClinicByIdService = (inputId) =>{
     return new Promise( async (resolve, reject) =>{

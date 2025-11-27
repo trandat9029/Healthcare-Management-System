@@ -13,18 +13,26 @@ let createClinic = async (req, res) =>{
     }
 }
 
-let getAllClinic = async (req, res) =>{
-    try {
-        let info = await clinicService.getAllClinicService();
-        return res.status(200).json(info);
-    } catch (error) {
-        console.log(error);
-        return res.status(200).json({
-            errCode: -1,
-            errMessage: 'Error from the server!'
-        })
-    }
-}
+let getAllClinic = async (req, res) => {
+  try {
+    let { page, limit, sortBy, sortOrder } = req.query;
+
+    let info = await clinicService.getAllClinicService(
+      page,
+      limit,
+      sortBy,
+      sortOrder
+    );
+
+    return res.status(200).json(info);
+  } catch (error) {
+    console.log(error);
+    return res.status(200).json({
+      errCode: -1,
+      errMessage: 'Error from the server!',
+    });
+  }
+};
 
 let getDetailClinicById = async (req, res) =>{
     try {

@@ -21,24 +21,60 @@ let handleLogin = async (req, res) =>{
     }); 
 }
 
-let handleGetAllUsers = async (req, res) =>{
-    let id = req.query.id;
-    if(!id){
+// userController.js
+let handleGetAllUsers = async (req, res) => {
+    try {
+        let {
+        id,
+        page,
+        limit,
+        sortBy,
+        sortOrder,
+        } = req.query;
+
+        if (!id) {
         return res.status(200).json({
             errCode: 1,
-            errMessage: 'Missing require parameter',
+            errMessage: 'Missing required parameter id',
             users: [],
         });
-    }
+        }
 
-    let users = await userService.getAllUsers(id);
-    return res.status(200).json({
+        let result = await userService.getAllUsers({
+        userId: id,
+        page,
+        limit,
+        sortBy,
+        sortOrder,
+        });
+
+        // Nếu query theo id cụ thể
+        if (id !== 'ALL') {
+        return res.status(200).json({
+            errCode: 0,
+            errMessage: 'Ok',
+            user: result,
+        });
+        }
+
+        // Nếu lấy ALL có phân trang
+        return res.status(200).json({
         errCode: 0,
         errMessage: 'Ok',
-        users,
-    });
-    
-}
+        users: result.rows,
+        total: result.count,
+        page: Number(page) || 1,
+        limit: Number(limit) || 10,
+        });
+    } catch (error) {
+        console.log('handleGetAllUsers error', error);
+        return res.status(500).json({
+        errCode: -1,
+        errMessage: 'Error from server',
+        });
+    }
+};
+
 
 let handleCreateNewUser = async (req, res) =>{
     let message =  await userService.createNewUser(req.body);

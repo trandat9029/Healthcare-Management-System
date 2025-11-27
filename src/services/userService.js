@@ -78,28 +78,74 @@ let handleUserLogin = (email, password) =>{
     });
 }
 
-let getAllUsers = (userId) =>{
-    return new Promise( async (resolve, reject) => {
+let getAllUsers = ({ userId, page, limit, sortBy, sortOrder }) => {
+    return new Promise(async (resolve, reject) => {
         try {
-            let users = '';
-            if(userId === 'ALL'){
-                users = await db.User.findAll({
-                    attributes:{
-                        exclude: ['password']
-                    }
-                })    
-            }
-            if(userId && userId !== 'ALL'){
-                users = await db.User.findOne({
-                    where: {id: userId}
-                }) 
-            }
-            resolve(users)
-        } catch (error) {
-            reject(error);
+        // Nếu lấy theo id cụ thể
+        if (userId && userId !== 'ALL') {
+            let user = await db.User.findOne({
+                where: { id: userId },
+                attributes: {
+                    exclude: ['password'],
+                },
+                include: [
+                    { 
+                        model: db.Allcode, as: 'positionData', attributes: ['valueEn', 'valueVi']
+                    },
+                    { 
+                        model: db.Allcode, as: 'roleData', attributes: ['valueEn', 'valueVi']
+                    },
+
+                ],
+                raw: false,
+                nest: true
+            });
+            return resolve(user);
         }
-    })
-}
+
+        // Lấy danh sách có phân trang
+        const pageNumber = Number(page) || 1;
+        const pageSize = Number(limit) || 10;
+        const offset = (pageNumber - 1) * pageSize;
+
+        // Whitelist các field được phép sort
+        const allowedSortField = {
+            email: 'email',
+            firstName: 'firstName',
+            lastName: 'lastName',
+            createdAt: 'createdAt',
+        };
+
+        const sortField = allowedSortField[sortBy] || 'createdAt';
+        const sortDirection =
+            String(sortOrder).toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
+
+        let users = await db.User.findAndCountAll({
+            attributes: {
+                exclude: ['password'],
+            },
+            include: [
+                { 
+                    model: db.Allcode, as: 'positionData', attributes: ['valueEn', 'valueVi']
+                },
+                { 
+                    model: db.Allcode, as: 'roleData', attributes: ['valueEn', 'valueVi']
+                },
+
+            ],
+            raw: false,
+            nest: true,
+            limit: pageSize,
+            offset,
+            order: [[sortField, sortDirection]],
+        });
+
+        resolve(users);
+        } catch (error) {
+        reject(error);
+        }
+    });
+};
 
 let createNewUser = (data) =>{
     return new Promise( async (resolve, reject) =>{

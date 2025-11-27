@@ -31,28 +31,44 @@ let createSpecialtyService = (data) =>{
         })
 } 
 
-let getAllSpecialtyService = (data) =>{
-     return new Promise( async (resolve, reject) =>{
-            try {
-                let data = await db.Specialty.findAll({
+let getAllSpecialtyService = ({ page = 1, limit = 10, sortBy = 'name', sortOrder = 'ASC' }) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            page = +page || 1;
+            limit = +limit || 10;
+            const offset = (page - 1) * limit;
 
-                });
-                if(data && data.length > 0){
-                    data.map(item =>{
+            let result = await db.Specialty.findAndCountAll({
+                offset,
+                limit,
+                order: [[sortBy, sortOrder.toUpperCase()]], // sort theo name
+            });
+
+            let specialties = result.rows || [];
+            if (specialties.length > 0) {
+                specialties = specialties.map(item => {
+                    if (item.image) {
                         item.image = new Buffer(item.image, 'base64').toString('binary');
-                        return item;
-                    })
-                }
-                resolve({
-                    errCode: 0,
-                    errMessage: 'ok',
-                    data
-                })
-            } catch (error) {
-                reject(error)
+                    }
+                    return item;
+                });
             }
-        })
-} 
+
+            resolve({
+                errCode: 0,
+                errMessage: 'ok',
+                specialties,
+                total: result.count,
+                page,
+                limit,
+            });
+        } catch (error) {
+            reject(error);
+        }
+    });
+};
+
+
 
 let getDetailSpecialtyByIdService = (inputId, location) =>{
     return new Promise( async (resolve, reject) =>{
