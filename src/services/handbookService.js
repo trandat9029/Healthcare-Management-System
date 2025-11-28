@@ -18,7 +18,7 @@ let handleCreateHandbook = (data) =>{
                         name: data.name,
                         author: data.author,
                         datePublish: data.datePublish,
-                        status: false,
+                        status: data.status,
                         image: data.imageBase64,
                         descriptionHTML: data.descriptionHTML,
                         descriptionMarkdown: data.descriptionMarkdown,
@@ -79,72 +79,78 @@ let handleEditHandbook= (data) =>{
     })
 }
 
-let handlePostHandbook = (data) =>{
-    return new Promise( async (resolve, reject) =>{
-        try {
-            if(!data.id || !data.status){
-                resolve({
-                    errCode: 1,
-                    errMessage: 'Missing required parameter!',
-                })
-            }else{
-                let handbook = await db.Handbook.findOne({
-                    where: {
-                        id: data.id,    
-                    },
-                    raw: false,
-                })
-
-                if(handbook){
-                    handbook.name = data.name; 
-                    handbook.author = data.author; 
-                    handbook.datePublish = data.datePublish;
-                    handbook.descriptionHTML = data.descriptionHTML; 
-                    handbook.descriptionMarkdown = data.descriptionMarkdown; 
-                    handbook.image = data.imageBase64; 
-                    handbook.status = true;  
-                    
-                    await handbook.save();
-
-                    resolve({
-                        errCode: 0,
-                        errMessage: 'Update the handbook post succeed!',
-                    }) 
-                }else{
-                    resolve({
-                        errCode: 1,
-                        errMessage: 'Handbook not found!',
-                    });
-                }     
-            }
-        } catch (error) {
-            reject(error)
-        }
-    })
-}
-
-let handleGetAllHandbook = () =>{
-     return new Promise( async (resolve, reject) =>{
-            try {
-                let data = await db.Handbook.findAll({
-                    
-                });
-                if(data && data.length > 0){
-                    data.map(item =>{
-                        item.image = new Buffer(item.image, 'base64').toString('binary');
-                        return item;
-                    })
-                }
-                resolve({
-                    errCode: 0,
-                    errMessage: 'OK',
-                    data
-                })
-            } catch (error) {
-                reject(error)
-            }
+let handlePostHandbook = (data) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      if (!data.id || data.status === undefined || data.status === null) {
+        resolve({
+          errCode: 1,
+          errMessage: 'Missing required parameter!',
         })
-} 
+      } else {
+        let handbook = await db.Handbook.findOne({
+          where: { id: data.id },
+          raw: false,
+        });
+
+        if (handbook) {
+          handbook.status = data.status;   // true hoặc false đều được
+          await handbook.save();
+
+          resolve({
+            errCode: 0,
+            errMessage: 'Update the handbook post succeed!',
+          });
+        } else {
+          resolve({
+            errCode: 1,
+            errMessage: 'Handbook not found!',
+          });
+        }
+      }
+    } catch (error) {
+      reject(error);
+    }
+  });
+};
+
+
+let handleGetAllHandbook = (page, limit, sortBy, sortOrder) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+        const offset = (page - 1) * limit;
+
+        let result = await db.Handbook.findAndCountAll({
+            limit,
+            offset,
+            order: [[sortBy, sortOrder]],   // ví dụ sortBy = 'name', sortOrder = 'ASC'
+            raw: false,
+            nest: true,
+        });
+
+        let data = result.rows || [];
+        if (data.length > 0) {
+            data = data.map(item => {
+            if (item.image) {
+                item.image = Buffer.from(item.image, 'base64').toString('binary');
+            }
+            return item;
+            });
+        }
+
+        resolve({
+            errCode: 0,
+            errMessage: 'OK',
+            data,
+            total: result.count,
+            page,
+            limit,
+        });
+        } catch (error) {
+        reject(error);
+        }
+    });
+};
 
 let handleGetListPostHandbook = () =>{
      return new Promise( async (resolve, reject) =>{

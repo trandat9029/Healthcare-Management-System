@@ -40,18 +40,29 @@ let handlePostHandbook = async (req, res) =>{
     }
 }
 
-let handleGetAllHandbook = async (req, res) =>{
+let handleGetAllHandbook = async (req, res) => {
     try {
-        let info = await handbookService.handleGetAllHandbook();
+        let page = +req.query.page || 1;
+        let limit = +req.query.limit || 8;
+        let sortBy = req.query.sortBy || 'name';
+        let sortOrder = req.query.sortOrder || 'ASC';
+
+        let info = await handbookService.handleGetAllHandbook(
+        page,
+        limit,
+        sortBy,
+        sortOrder
+        );
+
         return res.status(200).json(info);
     } catch (error) {
         console.log(error);
         return res.status(500).json({
-            errCode: -1,
-            errMessage: 'Error from the server!'
-        })
+        errCode: -1,
+        errMessage: 'Error from the server!',
+        });
     }
-}
+};
 
 let handleGetListPostHandbook = async (req, res) =>{
     try {
