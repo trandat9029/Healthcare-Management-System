@@ -10,4 +10,6 @@ const router = express.Router();
         
         router.post('/api/send-remedy', doctorController.sendRemedy);
 
+        router.get('/', patientController.handleGetAllBooking);
+
 export default router;

@@ -111,8 +111,63 @@ let postVerifyBookAppointmentService = (data) =>{
     })
 }
 
+let handleGetAllBooking = ({ page, limit, sortBy, sortOrder }) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            const pageNumber = Number(page) || 1;
+            const pageSize = Number(limit) || 10;
+            const offset = (pageNumber - 1) * pageSize;
+
+            const allowedSortField = {
+                doctorId: 'doctorId',
+                patientId: 'patientId',
+                statusId: 'statusId',
+                date: 'date',
+                timeType: 'timeType',
+                createdAt: 'createdAt',
+            };
+
+            const sortField = allowedSortField[sortBy] || 'createdAt';
+            const sortDirection =
+                String(sortOrder).toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
+
+            let doctors = await db.Booking.findAndCountAll({
+                include: [
+                    {
+                        model: db.User,
+                        as: 'patientData',
+                        attributes: ['firstName', 'lastName'],
+                    },
+                    {
+                        model: db.User,
+                        as: 'doctorBookings',
+                        attributes: ['firstName', 'lastName', 'email'],
+                    },
+                    {
+                        model: db.Allcode, as: 'timeTypeDataPatient', attributes: ['valueEn', 'valueVi'] 
+                    },
+                    {
+                        model: db.Allcode, as: 'statusData', attributes: ['valueEn', 'valueVi'] 
+                    },
+                ],
+                raw: true,
+                nest: true,
+                limit: pageSize,
+                offset,
+                order: [[sortField, sortDirection]],
+                distinct: true,
+            });
+
+            resolve(doctors);
+        } catch (error) {
+        reject(error);
+        }
+    });
+};
+
 module.exports = {
     postBookAppointmentService: postBookAppointmentService,
     postVerifyBookAppointmentService: postVerifyBookAppointmentService,
+    handleGetAllBooking: handleGetAllBooking,
 
 }

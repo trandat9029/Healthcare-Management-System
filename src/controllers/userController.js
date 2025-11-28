@@ -21,7 +21,7 @@ let handleLogin = async (req, res) =>{
     }); 
 }
 
-// userController.js
+
 let handleGetAllUsers = async (req, res) => {
     try {
         let {
