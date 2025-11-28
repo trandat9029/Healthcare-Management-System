@@ -105,7 +105,7 @@ let getAllCode = async (req, res) =>{
         return res.status(200).json(data);
     } catch (error) {
         console.log('Get allcode error: ', error);
-        return res.status(200).json({
+        return res.status(500).json({
             errCode: -1,
             errMessage: 'Error from server',
         })

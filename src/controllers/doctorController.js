@@ -39,7 +39,7 @@ let getAllDoctors = async (req, res) => {
         });
     } catch (error) {
         console.log(error);
-        return res.status(200).json({
+        return res.status(500).json({
             errCode: -1,
             errMessage: 'Error from the server',
         });
@@ -93,6 +93,33 @@ let getScheduleByDate = async (req, res) =>{
     } catch (error) {
         console.log(error);
         return res.status(200).json({
+            errCode: -1,
+            errMessage: 'Error from the server!'
+        })
+    }
+}
+
+let handleGetAllSchedule = async (req, res) =>{
+    try {
+        
+        let { page, limit, sortBy, sortOrder } = req.query;
+        let info = await doctorService.handleGetAllSchedule({
+            page,
+            limit,
+            sortBy,
+            sortOrder,
+        });
+        return res.status(200).json({
+            errCode: 0,
+            errMessage: 'Ok',
+            schedules: info.rows,
+            total: info.count,
+            page: Number(page) || 1,
+            limit: Number(limit) || 10,
+        });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({
             errCode: -1,
             errMessage: 'Error from the server!'
         })
@@ -162,4 +189,5 @@ module.exports = {
     getProfileDoctorById: getProfileDoctorById,
     getListPatientForDoctor: getListPatientForDoctor,
     sendRemedy: sendRemedy,
+    handleGetAllSchedule: handleGetAllSchedule,
 }
