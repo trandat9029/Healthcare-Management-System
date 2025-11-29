@@ -25,11 +25,11 @@ let handleLogin = async (req, res) =>{
 let handleGetAllUsers = async (req, res) => {
     try {
         let {
-        id,
-        page,
-        limit,
-        sortBy,
-        sortOrder,
+            id,
+            page,
+            limit,
+            sortBy,
+            sortOrder,
         } = req.query;
 
         if (!id) {
@@ -41,11 +41,11 @@ let handleGetAllUsers = async (req, res) => {
         }
 
         let result = await userService.getAllUsers({
-        userId: id,
-        page,
-        limit,
-        sortBy,
-        sortOrder,
+            userId: id,
+            page,
+            limit,
+            sortBy,
+            sortOrder,
         });
 
         // Nếu query theo id cụ thể
@@ -59,18 +59,18 @@ let handleGetAllUsers = async (req, res) => {
 
         // Nếu lấy ALL có phân trang
         return res.status(200).json({
-        errCode: 0,
-        errMessage: 'Ok',
-        users: result.rows,
-        total: result.count,
-        page: Number(page) || 1,
-        limit: Number(limit) || 10,
+            errCode: 0,
+            errMessage: 'Ok',
+            users: result.rows,
+            total: result.count,
+            page: Number(page) || 1,
+            limit: Number(limit) || 10,
         });
     } catch (error) {
         console.log('handleGetAllUsers error', error);
         return res.status(500).json({
-        errCode: -1,
-        errMessage: 'Error from server',
+            errCode: -1,
+            errMessage: 'Error from server',
         });
     }
 };

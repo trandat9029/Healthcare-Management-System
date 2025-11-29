@@ -99,6 +99,35 @@ let getScheduleByDate = async (req, res) =>{
     }
 }
 
+let handleGetScheduleByDoctor = async (req, res) => {
+    try {
+        const { doctorId, page, limit, sortBy, sortOrder } = req.query;
+
+        const result = await doctorService.handleGetScheduleByDoctor({
+            doctorId,
+            page,
+            limit,
+            sortBy,
+            sortOrder,
+        });
+
+        return res.status(200).json({
+            errCode: 0,
+            errMessage: 'Ok',
+            schedules: result.rows,
+            total: result.count,
+            page: Number(page) || 1,
+            limit: Number(limit) || 10,
+        });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({
+            errCode: -1,
+            errMessage: 'Error from the server!',
+        });
+    }
+};
+
 let handleGetAllSchedule = async (req, res) =>{
     try {
         
@@ -190,4 +219,5 @@ module.exports = {
     getListPatientForDoctor: getListPatientForDoctor,
     sendRemedy: sendRemedy,
     handleGetAllSchedule: handleGetAllSchedule,
+    handleGetScheduleByDoctor: handleGetScheduleByDoctor,
 }

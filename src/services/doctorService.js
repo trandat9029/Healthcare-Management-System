@@ -379,6 +379,53 @@ let handleGetAllSchedule = ({ page, limit, sortBy, sortOrder }) =>{
     });
 }
 
+let handleGetScheduleByDoctor = ({doctorId, page, limit, sortBy, sortOrder }) =>{
+    return new Promise(async (resolve, reject) => {
+        try {
+            const pageNumber = Number(page) || 1;
+            const pageSize = Number(limit) || 10;
+            const offset = (pageNumber - 1) * pageSize;
+
+            const allowedSortField = {
+                date: 'date',
+                timeType: 'timeType',
+                doctorId: 'doctorId',
+                createdAt: 'createdAt',
+            };
+
+            const sortField = allowedSortField[sortBy] || 'createdAt';
+            const sortDirection =
+                String(sortOrder).toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
+
+            let info = await db.Schedule.findAndCountAll({
+                where: { doctorId : doctorId },
+                include: [
+                    { 
+                        model: db.Allcode,
+                        as: 'timeTypeData',
+                        attributes: ['valueVi', 'valueEn']
+                    },
+                    { 
+                        model: db.User,
+                        as: 'doctorData',
+                        attributes: ['firstName', 'lastName']
+                    },
+                ],
+                raw: false,
+                nest: true,
+                limit: pageSize,
+                offset,
+                order: [[sortField, sortDirection]],
+                distinct: true,
+            });
+
+            resolve(info);
+            
+        } catch (error) {
+            reject(error);
+        }
+    });
+}
 
 let getExtraInfoDoctorByIdService = (doctorId) =>{
     return new Promise( async (resolve, reject) =>{
@@ -564,4 +611,5 @@ module.exports = {
     getListPatientForDoctorService: getListPatientForDoctorService,
     SendRemedy: SendRemedy,
     handleGetAllSchedule: handleGetAllSchedule,
+    handleGetScheduleByDoctor: handleGetScheduleByDoctor,
 }
