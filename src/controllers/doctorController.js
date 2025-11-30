@@ -66,7 +66,7 @@ let getDetailDoctorById = async (req, res) =>{
         return res.status(200).json(info);
     } catch (error) {
         console.log(error);
-        return res.status(200).json({
+        return res.status(500).json({
             errCode: -1,
             errMessage: 'Error from the server!'
         })
@@ -161,7 +161,7 @@ let getExtraInfoDoctorById = async (req, res) =>{
         return res.status(200).json(info);
     } catch (error) {
         console.log(error);
-        return res.status(200).json({
+        return res.status(500).json({
             errCode: -1,
             errMessage: 'Error from the server!'
         })
@@ -193,6 +193,7 @@ let getListPatientForDoctor = async (req, res) =>{
         })
     }
 }
+
 
 let sendRemedy = async (req, res) =>{
     try {
