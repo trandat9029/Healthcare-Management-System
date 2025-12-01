@@ -9,34 +9,21 @@ module.exports = {
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      email: {
+      patientId: {
+        type: Sequelize.INTEGER
+      },
+      birthday: {
         type: Sequelize.STRING
       },
-      password: {
+      note: {
         type: Sequelize.STRING
       },
-      firstName: {
+      reason: {
         type: Sequelize.STRING
       },
-      lastName: {
+      insuranceNumber: {
         type: Sequelize.STRING
       },
-      address: {
-        type: Sequelize.STRING
-      },
-      phoneNumber: {
-        type: Sequelize.STRING
-      },
-      gender: {
-        type: Sequelize.STRING
-      },
-      image: {
-        type: Sequelize.STRING
-      },
-      roleId: {
-        type: Sequelize.STRING
-      },
-
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE

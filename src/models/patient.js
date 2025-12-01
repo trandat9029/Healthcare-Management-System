@@ -25,16 +25,11 @@ module.exports = (sequelize, DataTypes) => {
   }
   Patient.init(
     {
-      email: DataTypes.STRING,
-      password: DataTypes.STRING,
-      firstName: DataTypes.STRING,
-      lastName: DataTypes.STRING,
-      address: DataTypes.STRING,
-      phoneNumber: DataTypes.STRING,
-      gender: DataTypes.STRING,
-      image: DataTypes.STRING,
-      roleId: DataTypes.STRING,
-
+      patientId: DataTypes.INTEGER,
+      birthday: DataTypes.STRING,
+      note: DataTypes.STRING,
+      reason: DataTypes.STRING,
+      insuranceNumber: DataTypes.STRING
     },
     {
       sequelize,
