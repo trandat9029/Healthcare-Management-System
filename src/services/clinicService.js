@@ -30,8 +30,6 @@ let createClinicService = (data) =>{
     })
 }
 
-// services/clinicService.js
-
 let getAllClinicService = (page, limit, sortBy, sortOrder) => {
   return new Promise(async (resolve, reject) => {
     try {
@@ -71,8 +69,6 @@ let getAllClinicService = (page, limit, sortBy, sortOrder) => {
     }
   });
 };
-
-
 
 let getDetailClinicByIdService = (inputId) =>{
     return new Promise( async (resolve, reject) =>{
@@ -115,9 +111,52 @@ let getDetailClinicByIdService = (inputId) =>{
         })
 }
 
+let handleUpdateClinic = (data) =>{
+    return new Promise( async (resolve, reject) =>{
+        try {
+            if(!data.id){
+                resolve({
+                    errCode: 1,
+                    errMessage: 'Missing required parameter!',
+                })
+            }else{
+                let clinic = await db.Clinic.findOne({
+                    where: {
+                        id: data.id,    
+                    },
+                    raw: false,
+                })
+
+                if(clinic){
+                    clinic.name = data.name; 
+                    clinic.address = data.address; 
+                    clinic.descriptionHTML = data.descriptionHTML;
+                    clinic.descriptionMarkdown = data.descriptionMarkdown; 
+                    clinic.image = data.imageBase64;  
+                    
+                    await clinic.save();
+
+                    resolve({
+                        errCode: 0,
+                        errMessage: 'Update the handbook succeed!',
+                    }) 
+                }else{
+                    resolve({
+                        errCode: 1,
+                        errMessage: 'Handbook not found!',
+                    });
+                }     
+            }
+        } catch (error) {
+            reject(error)
+        }
+    })
+}
+
 module.exports ={
     createClinicService: createClinicService,
     getAllClinicService: getAllClinicService,
     getDetailClinicByIdService: getDetailClinicByIdService,
+    handleUpdateClinic: handleUpdateClinic
 
 }

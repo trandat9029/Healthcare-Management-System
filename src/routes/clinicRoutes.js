@@ -15,5 +15,7 @@ router.get('/api/get-clinic', clinicController.getAllClinic);
 
 router.get('/api/get-detail-clinic-by-id', clinicController.getDetailClinicById);
 
+router.put('/', clinicController.handleUpdateClinic)
+
 
 export default router;
