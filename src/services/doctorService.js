@@ -21,6 +21,7 @@ let getTopDoctorHome = (limitInput) =>{
                 include: [
                     {model: db.Allcode, as: 'positionData', attributes: ['valueEn', 'valueVi']},
                     {model: db.Allcode, as: 'genderData', attributes: ['valueEn', 'valueVi']},
+                    {model: db.Doctor_info, as: 'doctorInfoData'},
                 ],
                 raw: true,
                 nest: true
@@ -158,7 +159,7 @@ let saveDetailInfoDoctor = (inputData) =>{
                     doctorInfo.addressClinic = inputData.addressClinic;
                     doctorInfo.note = inputData.note;
                     doctorInfo.specialtyId = inputData.specialtyId;
-                    doctorInfo.clinicId = inputData.specialtyId;
+                    doctorInfo.clinicId = inputData.clinicId;
 
                     await doctorInfo.save()
 
@@ -214,7 +215,7 @@ let getDetailDoctorByIdService = (inputId) =>{
                         },
                         { 
                             model: db.Doctor_info,  
-                            attributes: ['priceId', 'paymentId', 'provinceId', 'nameClinic', 'addressClinic', 'note', 'count'],
+                            attributes: ['priceId', 'paymentId', 'provinceId', 'specialtyId', 'clinicId', 'nameClinic', 'addressClinic', 'note', 'count'],
                             include: [
                                 {model: db.Allcode, as: 'priceTypeData', attributes: ['valueEn', 'valueVi']},
                                 {model: db.Allcode, as: 'paymentTypeData', attributes: ['valueEn', 'valueVi']},
