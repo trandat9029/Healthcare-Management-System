@@ -7,34 +7,44 @@ import _, { reject } from "lodash";
 
 const MAX_NUMBER_SCHEDULE = process.env.MAX_NUMBER_SCHEDULE;
 
-let getTopDoctorHome = (limitInput) =>{
-    return new Promise( async (resolve, reject) =>{
+let getTopDoctorHome = (limitInput) => {
+    return new Promise(async (resolve, reject) => {
         try {
             let users = await db.User.findAll({
                 limit: limitInput,
-                where: {roleId : 'R2'},
+                where: { roleId: 'R2' },
                 order: [['createdAt', 'DESC']],
-                attributes:{
-                    exclude: ['password']
-                },
-                
+                attributes: {
+                    exclude: ['password'],
+                    },
                 include: [
-                    {model: db.Allcode, as: 'positionData', attributes: ['valueEn', 'valueVi']},
-                    {model: db.Allcode, as: 'genderData', attributes: ['valueEn', 'valueVi']},
-                    {model: db.Doctor_info, as: 'doctorInfoData'},
+                    { model: db.Allcode, as: 'positionData', attributes: ['valueEn', 'valueVi'] },
+                    { model: db.Allcode, as: 'genderData', attributes: ['valueEn', 'valueVi'] },
+                    { model: db.Doctor_info, as: 'doctorInfoData' },  
                 ],
                 raw: true,
-                nest: true
-            })
+                nest: true,
+            });
+
+            if (users && users.length > 0) {
+                users = users.map((item) => {
+                if (item.image) {
+                    item.image = Buffer.from(item.image, 'base64').toString('binary');
+                }
+                return item;
+                });
+            }
+
             resolve({
                 errCode: 0,
                 data: users,
-            })
+            });
         } catch (error) {
-            reject(error)
+            reject(error);
         }
-    })
-}
+    });
+};
+
 
 // doctorService.js
 let getAllDoctors = ({ page, limit, sortBy, sortOrder }) => {
@@ -201,33 +211,43 @@ let getDetailDoctorByIdService = (inputId) =>{
             }else{
                 let data = await db.User.findOne({
                     where: { id: inputId },
-                    attributes:{
-                        exclude: ['password']
+                    attributes: {
+                        exclude: ['password'],
                     },
-                    
                     include: [
-                        { 
-                            model: db.Markdown,  
-                            attributes: ['description', 'contentHTML', 'contentMarkdown']
+                        {
+                            model: db.Markdown,
+                            attributes: ['description', 'contentHTML', 'contentMarkdown'],
                         },
-                        { 
-                            model: db.Allcode, as: 'positionData', attributes: ['valueEn', 'valueVi']
+                        {
+                            model: db.Allcode,
+                            as: 'positionData',
+                            attributes: ['valueEn', 'valueVi'],
                         },
-                        { 
-                            model: db.Doctor_info,  
-                            attributes: ['priceId', 'paymentId', 'provinceId', 'specialtyId', 'clinicId', 'nameClinic', 'addressClinic', 'note', 'count'],
+                        {
+                            model: db.Doctor_info,
+                            as: 'doctorInfoData',                // thêm alias ở đây
+                            attributes: [
+                                'priceId',
+                                'paymentId',
+                                'provinceId',
+                                'specialtyId',
+                                'clinicId',
+                                'nameClinic',
+                                'addressClinic',
+                                'note',
+                                'count',
+                            ],
                             include: [
-                                {model: db.Allcode, as: 'priceTypeData', attributes: ['valueEn', 'valueVi']},
-                                {model: db.Allcode, as: 'paymentTypeData', attributes: ['valueEn', 'valueVi']},
-                                {model: db.Allcode, as: 'provinceTypeData', attributes: ['valueEn', 'valueVi']},
-                            ]
-
+                                { model: db.Allcode, as: 'priceTypeData', attributes: ['valueEn', 'valueVi'] },
+                                { model: db.Allcode, as: 'paymentTypeData', attributes: ['valueEn', 'valueVi'] },
+                                { model: db.Allcode, as: 'provinceTypeData', attributes: ['valueEn', 'valueVi'] },
+                            ],
                         },
                     ],
                     raw: false,
-                    nest: true
-                })
-
+                    nest: true,
+                });
                 if(data && data.image ){
                     data.image = new Buffer(data.image, 'base64').toString('binary');
                 }
@@ -469,37 +489,46 @@ let getProfileDoctorByIdService = (inputId) =>{
         try {
             if(!inputId){
                 resolve({
-                    errCode: 1,
-                    errMessage: 'Missing required parameter!',
+                errCode: 1,
+                errMessage: 'Missing required parameter!',
                 })
             }else{
                 let data = await db.User.findOne({
-                    where: { id: inputId },
-                    attributes:{
-                        exclude: ['password']
+                where: { id: inputId },
+                attributes:{
+                    exclude: ['password']
+                },
+                include: [
+                    { 
+                        model: db.Markdown,  
+                        attributes: ['description', 'contentHTML', 'contentMarkdown']
                     },
-                    
-                    include: [
-                        { 
-                            model: db.Markdown,  
-                            attributes: ['description', 'contentHTML', 'contentMarkdown']
-                        },
-                        { 
-                            model: db.Allcode, as: 'positionData', attributes: ['valueEn', 'valueVi']
-                        },
-                        { 
-                            model: db.Doctor_info,  
-                            attributes: ['priceId', 'paymentId', 'provinceId', 'nameClinic', 'addressClinic', 'note', 'count'],
-                            include: [
-                                {model: db.Allcode, as: 'priceTypeData', attributes: ['valueEn', 'valueVi']},
-                                {model: db.Allcode, as: 'paymentTypeData', attributes: ['valueEn', 'valueVi']},
-                                {model: db.Allcode, as: 'provinceTypeData', attributes: ['valueEn', 'valueVi']},
-                            ]
-
-                        },
-                    ],
-                    raw: false,
-                    nest: true
+                    { 
+                        model: db.Allcode,
+                        as: 'positionData',
+                        attributes: ['valueEn', 'valueVi']
+                    },
+                    { 
+                        model: db.Doctor_info,
+                        as: 'doctorInfoData',                 // thêm alias cho đúng
+                        attributes: [
+                            'priceId',
+                            'paymentId',
+                            'provinceId',
+                            'nameClinic',
+                            'addressClinic',
+                            'note',
+                            'count',
+                        ],
+                        include: [
+                            { model: db.Allcode, as: 'priceTypeData', attributes: ['valueEn', 'valueVi'] },
+                            { model: db.Allcode, as: 'paymentTypeData', attributes: ['valueEn', 'valueVi'] },
+                            { model: db.Allcode, as: 'provinceTypeData', attributes: ['valueEn', 'valueVi'] },
+                        ]
+                    },
+                ],
+                raw: false,
+                nest: true
                 })
 
                 if(data && data.image ){
@@ -514,10 +543,11 @@ let getProfileDoctorByIdService = (inputId) =>{
                 })
             }
         } catch (error) {
-            reject(error)
+        reject(error)
         }
     })
 }
+
 
 let getListPatientForDoctorService = (doctorId, date) =>{
     return new Promise( async (resolve, reject) =>{

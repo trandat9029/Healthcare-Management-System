@@ -31,44 +31,57 @@ let createClinicService = (data) =>{
 }
 
 let getAllClinicService = (page, limit, sortBy, sortOrder) => {
-  return new Promise(async (resolve, reject) => {
-    try {
-      page = +page || 1;
-      limit = +limit || 8;
-      sortBy = sortBy || 'name';
-      sortOrder = sortOrder === 'DESC' ? 'DESC' : 'ASC';
+    return new Promise(async (resolve, reject) => {
+        try {
+            const isGetAll = String(limit).toUpperCase() === "ALL";
 
-      let offset = (page - 1) * limit;
+            sortBy = sortBy || "name";
+            sortOrder = sortOrder === "DESC" ? "DESC" : "ASC";
 
-      let result = await db.Clinic.findAndCountAll({
-        offset,
-        limit,
-        order: [[sortBy, sortOrder]],
-      });
+            let result;
+5
+            if (isGetAll) {
+                // lấy tất cả không phân trang
+                result = await db.Clinic.findAndCountAll({
+                order: [[sortBy, sortOrder]],
+                });
+            } else {
+                // lấy có phân trang như cũ
+                page = +page || 1;
+                limit = +limit || 8;
+                const offset = (page - 1) * limit;
 
-      let clinics = result.rows || [];
-      if (clinics.length > 0) {
-        clinics = clinics.map((item) => {
-          if (item.image) {
-            item.image = Buffer.from(item.image, 'base64').toString('binary');
-          }
-          return item;
-        });
-      }
+                result = await db.Clinic.findAndCountAll({
+                offset,
+                limit,
+                order: [[sortBy, sortOrder]],
+                });
+            }
 
-      resolve({
-        errCode: 0,
-        errMessage: 'OK',
-        data: clinics,
-        total: result.count,
-        page,
-        limit,
-      });
-    } catch (error) {
-      reject(error);
-    }
-  });
+            let clinics = result.rows || [];
+            if (clinics.length > 0) {
+                clinics = clinics.map((item) => {
+                if (item.image) {
+                    item.image = Buffer.from(item.image, "base64").toString("binary");
+                }
+                return item;
+                });
+            }
+
+            resolve({
+                errCode: 0,
+                errMessage: "OK",
+                data: clinics,
+                total: result.count,
+                page: isGetAll ? 1 : page,
+                limit: isGetAll ? "ALL" : limit,
+            });
+        } catch (error) {
+            reject(error);
+        }
+    });
 };
+
 
 let getDetailClinicByIdService = (inputId) =>{
     return new Promise( async (resolve, reject) =>{
@@ -83,10 +96,16 @@ let getDetailClinicByIdService = (inputId) =>{
                             where: {
                                 id: inputId,
                             },
-                            attributes: ['name', 'address', 'descriptionHTML', 'descriptionMarkdown']
+                            attributes: ['name', 'address', 'descriptionHTML', 'descriptionMarkdown', 'image']
                         })
     
                         if(data){
+
+                            // convert ảnh
+                            if (data.image) {
+                                data.image = Buffer.from(data.image, 'base64').toString('binary');
+                            }
+
                             let doctorClinic = [];    
 
                             doctorClinic = await db.Doctor_info.findAll({

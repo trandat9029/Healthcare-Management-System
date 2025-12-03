@@ -8,19 +8,19 @@ module.exports = (sequelize, DataTypes) => {
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
-      // define association here
-      User.belongsTo(models.Allcode, {foreignKey: 'positionId', targetKey: 'keyMap', as: 'positionData'});
-      User.belongsTo(models.Allcode, {foreignKey: 'roleId', targetKey: 'keyMap', as: 'roleData'});
-      User.belongsTo(models.Allcode, {foreignKey: 'gender', targetKey: 'keyMap', as: 'genderData'});
+      User.belongsTo(models.Allcode, { foreignKey: 'positionId', targetKey: 'keyMap', as: 'positionData' });
+      User.belongsTo(models.Allcode, { foreignKey: 'roleId', targetKey: 'keyMap', as: 'roleData' });
+      User.belongsTo(models.Allcode, { foreignKey: 'gender', targetKey: 'keyMap', as: 'genderData' });
 
-      User.hasOne(models.Markdown, {foreignKey: 'doctorId'});
+      User.hasOne(models.Markdown, { foreignKey: 'doctorId' });
 
-      User.hasOne(models.Doctor_info, {foreignKey: 'doctorId', as: 'doctorInfoData'});
+      // chỉ alias ở đây
+      User.hasOne(models.Doctor_info, { foreignKey: 'doctorId', as: 'doctorInfoData' });
 
-      User.hasMany(models.Schedule, {foreignKey: 'doctorId', as: 'doctorData'});
+      User.hasMany(models.Schedule, { foreignKey: 'doctorId', as: 'doctorData' });
 
-      User.hasMany(models.Booking, {foreignKey: 'patientId', as: 'patientData'});
-      User.hasMany(models.Booking, {foreignKey: 'doctorId', as: 'doctorBookings'});
+      User.hasMany(models.Booking, { foreignKey: 'patientId', as: 'patientData' });
+      User.hasMany(models.Booking, { foreignKey: 'doctorId', as: 'doctorBookings' });
 
 
     }

@@ -27,7 +27,7 @@ let getAllClinic = async (req, res) => {
     return res.status(200).json(info);
   } catch (error) {
     console.log(error);
-    return res.status(200).json({
+    return res.status(500).json({
       errCode: -1,
       errMessage: 'Error from the server!',
     });

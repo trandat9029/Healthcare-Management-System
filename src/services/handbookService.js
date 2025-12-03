@@ -175,42 +175,58 @@ let handleGetListPostHandbook = () =>{
         })
 } 
 
-let handleGetDetailHandbookById = (inputId) =>{
-    return new Promise( async (resolve, reject) =>{
-        try {
-            if(!inputId){
-                resolve({
-                    errCode: 1,
-                    errMessage: 'Missing required parameter!',
-                })
-            }else{
-                let data = await db.Handbook.findOne({
-                        where: {
-                            id: inputId,
-                            status: true,
-                        },
-                        attributes: ['name', 'author', 'datePublish', 'descriptionHTML', 'descriptionMarkdown']
-                    })
+let handleGetDetailHandbookById = (inputId) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      if (!inputId) {
+        return resolve({
+          errCode: 1,
+          errMessage: 'Missing required parameter!',
+        });
+      }
 
-                    if(!data){
-                        resolve({
-                            errCode: 1,
-                            errMessage: 'Handbook not found!',
-                            data: {}
-                    }) 
-                         
-                    }
-                    resolve({
-                        errCode: 0,
-                        errMessage: 'ok',
-                        data
-                    }) 
-            }
-        } catch (error) {
-            reject(error)
-        }
-    })
-}
+      let data = await db.Handbook.findOne({
+        where: {
+          id: inputId,
+          status: true,
+        },
+        attributes: [
+          'name',
+          'author',
+          'datePublish',
+          'descriptionHTML',
+          'descriptionMarkdown',
+          'image',
+        ],
+        raw: false, // cho chắc
+      });
+
+      if (!data) {
+        return resolve({
+          errCode: 1,
+          errMessage: 'Handbook not found!',
+          data: {},
+        });
+      }
+
+      // CHUYỂN ẢNH TỪ BUFFER SANG CHUỖI CHO FE
+      if (data.image) {
+        data.image = Buffer.from(data.image, 'base64').toString('binary');
+        // hoặc. nếu bạn lưu kiểu base64 gốc
+        // data.image = data.image.toString('base64');
+      }
+
+      resolve({
+        errCode: 0,
+        errMessage: 'ok',
+        data,
+      });
+    } catch (error) {
+      reject(error);
+    }
+  });
+};
+
 
 let handleDeleteHandbook = (inputId) =>{
     return new Promise( async (resolve, reject) =>{
