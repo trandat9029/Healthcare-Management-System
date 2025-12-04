@@ -12,4 +12,10 @@ const router = express.Router();
 
         router.get('/', patientController.handleGetAllBooking);
 
+        router.get('/histories', patientController.handleGetAllBookedByPatient);
+
+        router.post('/cancel', patientController.handleSendEmailCancelBooked);
+
+        router.post('/cancel/verify', patientController.handleVerifyCancelBooked);
+
 export default router;

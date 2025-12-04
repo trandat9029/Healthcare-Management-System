@@ -4,6 +4,7 @@ require('dotenv').config();
 import emailService from './emailService'
 // import { v4 as uuidv4 } from 'uuid';
 const { v4: uuidv4 } = require('uuid');
+import { Op } from 'sequelize';
 
 
 let buildUrlEmail = (doctorId, token) =>{
@@ -11,6 +12,10 @@ let buildUrlEmail = (doctorId, token) =>{
 
     return result;
 }
+
+let buildUrlCancelEmail = (doctorId, token) => {
+    return `${process.env.FRONTEND_ORIGIN}/verify-cancel-booking?token=${token}&doctorId=${doctorId}`;
+};
 
 let postBookAppointmentService = (data) =>{
     return new Promise( async (resolve, reject) =>{
@@ -26,11 +31,20 @@ let postBookAppointmentService = (data) =>{
 
                 await emailService.sendSimpleEmail({
                     receiverEmail: data.email,
-                    patientName: data.fullName,
-                    time: data.timeString,
-                    doctorName: data.doctorName,
                     language: data.language,
-                    redirectLink: buildUrlEmail(data.doctorId, token)
+                    redirectLink: buildUrlEmail(data.doctorId, token),
+
+                    fullName: data.fullName,           // hoặc ghép từ lastName firstName
+                    phoneNumber: data.phoneNumber,
+                    email: data.email,
+                    address: data.address,
+                    reason: data.reason,
+                    birthday: data.birthday,
+                    selectedGender: data.selectedGender,
+                    timeString: data.timeString,
+                    doctorName: data.doctorName,
+                    note: data.note,
+                    insuranceNumber: data.insuranceNumber,
                 })
 
                 // upsert patient
@@ -41,7 +55,8 @@ let postBookAppointmentService = (data) =>{
                         roleId: 'R3',
                         gender : data.selectedGender,
                         address: data.address,
-                        firstName: data.fullName,
+                        firstName: data.firstName,
+                        lastName: data.lastName,
                         
                     }
                 });
@@ -165,9 +180,168 @@ let handleGetAllBooking = ({ page, limit, sortBy, sortOrder }) => {
     });
 };
 
+let handleGetAllBookedByPatient = ({ patientId, page, limit, sortBy, sortOrder }) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+        const offset = (page - 1) * limit;
+
+        const order = [];
+        if (sortBy) {
+            order.push([
+            sortBy,
+            String(sortOrder).toUpperCase() === 'ASC' ? 'ASC' : 'DESC',
+            ]);
+        } else {
+            // mặc định mới nhất lên trước
+            order.push(['createdAt', 'DESC']);
+        }
+
+        const result = await db.Booking.findAndCountAll({
+            where: { patientId },
+            limit,
+            offset,
+            order,
+            include: [
+            {
+                model: db.User,
+                as: 'doctorBookings',       // phải trùng alias trong model Booking
+                attributes: ['id', 'firstName', 'lastName', 'image', 'positionId'],
+                include: [
+                {
+                    model: db.Allcode,
+                    as: 'positionData',
+                    attributes: ['valueVi', 'valueEn'],
+                },
+                ],
+            },
+            {
+                model: db.User,
+                as: 'patientData',     
+                attributes: ['id','email', 'firstName', 'lastName','address', 'phoneNumber'],
+                
+            },
+            {
+                model: db.Allcode,
+                as: 'timeTypeDataPatient',
+                attributes: ['valueVi', 'valueEn'],
+            },
+            {
+                model: db.Allcode,
+                as: 'statusData',
+                attributes: ['valueVi', 'valueEn'],
+            },
+            ],
+            distinct: true, // tránh count sai khi join nhiều bảng
+            raw: false,
+            nest: true,
+        });
+
+        resolve(result);
+        } catch (error) {
+        reject(error);
+        }
+    });
+};
+
+
+let handleSendEmailCancelBooked = (data) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+        if (!data.email || !data.doctorId || !data.bookingId || !data.language) {
+            return resolve({
+            errCode: 1,
+            errMessage: 'Missing required parameter!',
+            });
+        }
+
+        let appointment = await db.Booking.findOne({
+            where: {
+            id: data.bookingId,
+            doctorId: data.doctorId,
+            statusId: {
+                [Op.in]: ['S1', 'S2'],   // sửa ở đây
+            },
+            },
+            raw: false,
+        });
+
+        if (!appointment) {
+            return resolve({
+            errCode: 2,
+            errMessage: 'Appointment not found or cannot be cancelled!',
+            });
+        }
+
+        const token = uuidv4();
+        appointment.token = token;
+        await appointment.save();
+
+        await emailService.sendCancelEmail({
+            receiverEmail: data.email,
+            language: data.language,
+            fullName: data.fullName,
+            timeString: data.timeString,
+            doctorName: data.doctorName,
+            redirectLink: buildUrlCancelEmail(data.doctorId, token),
+        });
+
+        return resolve({
+            errCode: 0,
+            errMessage: 'Send cancel email succeed!',
+        });
+        } catch (error) {
+        console.log(error);
+        reject(error);
+        }
+    });
+};
+
+let handleVerifyCancelBooked = (data) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+        if (!data.token || !data.doctorId) {
+            return resolve({
+            errCode: 1,
+            errMessage: 'Missing required parameter!',
+            });
+        }
+
+        let appointment = await db.Booking.findOne({
+            where: {
+            doctorId: data.doctorId,
+            token: data.token,
+            statusId: {
+                [Op.in]: ['S1', 'S2'],   // sửa giống trên
+            },
+            },
+            raw: false,
+        });
+
+        if (appointment) {
+            appointment.statusId = 'S4';
+            await appointment.save();
+
+            return resolve({
+            errCode: 0,
+            errMessage: 'Update the appointment succeed!',
+            });
+        } else {
+            return resolve({
+            errCode: 2,
+            errMessage: 'Appointment has been activated or does not exist!',
+            });
+        }
+        } catch (error) {
+        reject(error);
+        }
+    });
+};
+
 module.exports = {
     postBookAppointmentService: postBookAppointmentService,
     postVerifyBookAppointmentService: postVerifyBookAppointmentService,
     handleGetAllBooking: handleGetAllBooking,
-
+    handleGetAllBookedByPatient: handleGetAllBookedByPatient,
+    handleSendEmailCancelBooked: handleSendEmailCancelBooked,
+    handleVerifyCancelBooked: handleVerifyCancelBooked,
 }
