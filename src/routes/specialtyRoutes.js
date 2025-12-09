@@ -3,9 +3,13 @@ import specialtyController from '../controllers/specialtyController';
 
 const router = express.Router();
 
-     router.post('/api/create-new-specialty', specialtyController.createSpecialty);
+    router.post('/', specialtyController.createSpecialty);
     
-    router.get('/api/get-specialty', specialtyController.getAllSpecialty);
+    router.get('/', specialtyController.getAllSpecialty);
+    
+    router.put('/', specialtyController.handleUpdateSpecialty);
+    
+    router.delete('/', specialtyController.handleDeleteSpecialty);
     
     router.get('/api/get-detail-specialty-by-id', specialtyController.getDetailSpecialtyById);
 

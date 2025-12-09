@@ -1,5 +1,5 @@
-import { where } from "sequelize";
-import db from "../models"
+import { Op, where } from "sequelize";
+import db, { Sequelize } from "../models"
 require('dotenv').config();
 
 
@@ -36,27 +36,42 @@ let getAllSpecialtyService = ({
     limit = 10,
     sortBy = 'name',
     sortOrder = 'ASC',
+    keyword,
     }) => {
     return new Promise(async (resolve, reject) => {
         try {
         // nếu limit = 'ALL' thì lấy tất cả không phân trang
         const isGetAll = String(limit).toUpperCase() === 'ALL';
 
+        let whereCondition= {};
+
+        if(keyword){
+            whereCondition = Sequelize.where(
+                Sequelize.col("name"),
+                { 
+                    [Op.like]: Sequelize.literal(`BINARY '%${keyword}%'`) 
+                }
+            )
+        }
+
         let result;
 
         if (isGetAll) {
             result = await db.Specialty.findAndCountAll({
-            order: [[sortBy, sortOrder.toUpperCase()]],
+                where: whereCondition,
+                order: [[sortBy, sortOrder.toUpperCase()]],
             });
         } else {
             page = +page || 1;
             limit = +limit || 10;
             const offset = (page - 1) * limit;
+            
 
             result = await db.Specialty.findAndCountAll({
-            offset,
-            limit,
-            order: [[sortBy, sortOrder.toUpperCase()]],
+                where: whereCondition,
+                offset,
+                limit,
+                order: [[sortBy, sortOrder.toUpperCase()]],
             });
         }
 
@@ -83,8 +98,6 @@ let getAllSpecialtyService = ({
         }
     });
 };
-
-
 
 
 let getDetailSpecialtyByIdService = (inputId, location) =>{
@@ -143,9 +156,86 @@ let getDetailSpecialtyByIdService = (inputId, location) =>{
 }
 
 
+let handleUpdateSpecialty = (data) =>{
+    return new Promise( async (resolve, reject) =>{
+        try {
+            if(!data.id){
+                resolve({
+                    errCode: 1,
+                    errMessage: 'Missing required parameter!',
+                })
+            }else{
+                let specialty = await db.Specialty.findOne({
+                    where: {
+                        id: data.id,    
+                    },
+                    raw: false,
+                })
+
+                if(specialty){
+                    specialty.name = data.name; 
+                    specialty.descriptionHTML = data.descriptionHTML;
+                    specialty.descriptionMarkdown = data.descriptionMarkdown; 
+                    specialty.image = data.imageBase64;  
+                    
+                    await specialty.save();
+
+                    resolve({
+                        errCode: 0,
+                        errMessage: 'Update the specialty succeed!',
+                    }) 
+                }else{
+                    resolve({
+                        errCode: 1,
+                        errMessage: 'Specialty not found!',
+                    });
+                }     
+            }
+        } catch (error) {
+            reject(error)
+        }
+    })    
+}
+
+let handleDeleteSpecialty = (inputId) =>{
+    return new Promise( async (resolve, reject) =>{
+        try {
+            if(!inputId){
+                resolve({
+                    errCode: 1,
+                    errMessage: 'Missing required parameter!',
+                })
+            }else{
+                let data = await db.Specialty.findOne({
+                    where: {
+                        id: inputId,
+                    },
+                });
+
+                if(!data){
+                    resolve({
+                        errCode: 2,
+                        errMessage: 'Specialty not found!',
+                    })        
+                }
+                await db.Specialty.destroy({
+                    where: {id: inputId}
+                })
+                resolve({
+                    errCode: 0,
+                    errMessage: 'The specialty is deleted',
+                }) 
+            }
+        } catch (error) {
+            reject(error)
+        }
+    })
+}
+
 module.exports ={
     createSpecialtyService: createSpecialtyService,
     getAllSpecialtyService: getAllSpecialtyService,
     getDetailSpecialtyByIdService: getDetailSpecialtyByIdService,
-
+    handleUpdateSpecialty: handleUpdateSpecialty,
+    handleDeleteSpecialty: handleDeleteSpecialty,
 }

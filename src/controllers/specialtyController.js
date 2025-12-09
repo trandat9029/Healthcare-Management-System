@@ -15,13 +15,14 @@ let createSpecialty = async (req, res) =>{
 
 let getAllSpecialty = async (req, res) => {
     try {
-        let { page, limit, sortBy, sortOrder } = req.query;
+        let { page, limit, sortBy, sortOrder, keyword } = req.query;
 
         let info = await specialtyService.getAllSpecialtyService({
             page,
             limit,
             sortBy: sortBy || 'name',
             sortOrder: sortOrder || 'ASC',
+            keyword,
         });
 
         return res.status(200).json(info);
@@ -33,8 +34,6 @@ let getAllSpecialty = async (req, res) => {
         });
     }
 };
-
-
 
 let getDetailSpecialtyById = async (req, res) =>{
     try {
@@ -49,9 +48,37 @@ let getDetailSpecialtyById = async (req, res) =>{
     }
 }
 
+let handleUpdateSpecialty = async (req, res) =>{
+    try {
+        let message =  await specialtyService.handleUpdateSpecialty(req.body);
+        return res.status(200).json(message);
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({
+            errCode: -1,
+            errMessage: 'Error from the server!'
+        })
+    }
+}
+
+let handleDeleteSpecialty = async (req, res) =>{
+    try {
+        let message =  await specialtyService.handleDeleteSpecialty(req.body.id);
+        return res.status(200).json(message);
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({
+            errCode: -1,
+            errMessage: 'Error from the server!'
+        })
+    }  
+}
+
 module.exports = {
     createSpecialty: createSpecialty,
     getAllSpecialty: getAllSpecialty,
     getDetailSpecialtyById: getDetailSpecialtyById,
+    handleUpdateSpecialty: handleUpdateSpecialty,
+    handleDeleteSpecialty: handleDeleteSpecialty,
 
 }

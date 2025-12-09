@@ -157,12 +157,12 @@ let handleUpdateClinic = (data) =>{
 
                     resolve({
                         errCode: 0,
-                        errMessage: 'Update the handbook succeed!',
+                        errMessage: 'Update the clinic succeed!',
                     }) 
                 }else{
                     resolve({
                         errCode: 1,
-                        errMessage: 'Handbook not found!',
+                        errMessage: 'Clinic not found!',
                     });
                 }     
             }
