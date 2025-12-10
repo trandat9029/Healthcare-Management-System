@@ -47,11 +47,17 @@ let handleGetAllHandbook = async (req, res) => {
         let sortBy = req.query.sortBy || 'name';
         let sortOrder = req.query.sortOrder || 'ASC';
 
+        // mới
+        let keyword = req.query.keyword || '';
+        let datePublish = req.query.datePublish || '';
+
         let info = await handbookService.handleGetAllHandbook(
-        page,
-        limit,
-        sortBy,
-        sortOrder
+            page,
+            limit,
+            sortBy,
+            sortOrder,
+            keyword,
+            datePublish
         );
 
         return res.status(200).json(info);
@@ -63,6 +69,7 @@ let handleGetAllHandbook = async (req, res) => {
         });
     }
 };
+
 
 let handleGetListPostHandbook = async (req, res) =>{
     try {

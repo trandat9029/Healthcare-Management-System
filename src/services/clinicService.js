@@ -31,9 +31,6 @@ let createClinicService = (data) =>{
     })
 }
 
-// src/services/clinicService.js
-
-
 let getAllClinicService = (
     page = 1,
     limit = 7,
@@ -105,9 +102,6 @@ let getAllClinicService = (
         }
     });
 };
-
-
-
 
 let getDetailClinicByIdService = (inputId) =>{
     return new Promise( async (resolve, reject) =>{
@@ -197,7 +191,6 @@ let handleUpdateClinic = (data) =>{
         }
     })
 }
-
 
 let handleDeleteClinic = (inputId) =>{
     return new Promise( async (resolve, reject) =>{

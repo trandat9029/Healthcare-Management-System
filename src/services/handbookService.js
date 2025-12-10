@@ -1,4 +1,4 @@
-import { where } from "sequelize";
+import { Op, where } from "sequelize";
 import db from "../models"
 import { raw } from "body-parser";
 require('dotenv').config();
@@ -114,43 +114,78 @@ let handlePostHandbook = (data) => {
   });
 };
 
+let handleGetAllHandbook = (
+  page,
+  limit,
+  sortBy,
+  sortOrder,
+  keyword,
+  datePublish
+) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      page = +page || 1;
+      limit = +limit || 8;
+      sortBy = sortBy || 'name';
+      sortOrder = sortOrder === 'DESC' ? 'DESC' : 'ASC';
 
-let handleGetAllHandbook = (page, limit, sortBy, sortOrder) => {
-    return new Promise(async (resolve, reject) => {
-        try {
-        const offset = (page - 1) * limit;
+      const offset = (page - 1) * limit;
 
-        let result = await db.Handbook.findAndCountAll({
-            limit,
-            offset,
-            order: [[sortBy, sortOrder]],   // ví dụ sortBy = 'name', sortOrder = 'ASC'
-            raw: false,
-            nest: true,
+      // điều kiện where tổng
+      let whereCondition = {};
+
+      // 1. filter keyword theo tên bài viết + tên tác giả
+      if (keyword) {
+        whereCondition[Op.or] = [
+          { name: { [Op.like]: `%${keyword}%` } },
+          { authorName: { [Op.like]: `%${keyword}%` } }, // đổi đúng tên cột nếu cần
+        ];
+      }
+
+      // 2. filter theo ngày đăng
+      if (datePublish) {
+        // nếu datePublish là string "YYYY-MM-DD"
+        // và cột trong DB là DATETIME thì dùng like cho an toàn
+        whereCondition.datePublish = {
+          [Op.like]: `${datePublish}%`,
+        };
+        // nếu cột là DATE thuần thì có thể dùng:
+        // whereCondition.datePublish = datePublish;
+      }
+
+      let result = await db.Handbook.findAndCountAll({
+        where: whereCondition,
+        limit,
+        offset,
+        order: [[sortBy, sortOrder]],
+        raw: false,
+        nest: true,
+      });
+
+      let data = result.rows || [];
+      if (data.length > 0) {
+        data = data.map((item) => {
+          if (item.image) {
+            item.image = Buffer.from(item.image, 'base64').toString('binary');
+          }
+          return item;
         });
+      }
 
-        let data = result.rows || [];
-        if (data.length > 0) {
-            data = data.map(item => {
-            if (item.image) {
-                item.image = Buffer.from(item.image, 'base64').toString('binary');
-            }
-            return item;
-            });
-        }
-
-        resolve({
-            errCode: 0,
-            errMessage: 'OK',
-            data,
-            total: result.count,
-            page,
-            limit,
-        });
-        } catch (error) {
-        reject(error);
-        }
-    });
+      resolve({
+        errCode: 0,
+        errMessage: 'OK',
+        data,
+        total: result.count,
+        page,
+        limit,
+      });
+    } catch (error) {
+      reject(error);
+    }
+  });
 };
+
 
 let handleGetListPostHandbook = () =>{
      return new Promise( async (resolve, reject) =>{
@@ -159,10 +194,12 @@ let handleGetListPostHandbook = () =>{
                     where: {status: true}
                 });
                 if(data && data.length > 0){
-                    data.map(item =>{
-                        item.image = new Buffer(item.image, 'base64').toString('binary');
-                        return item;
-                    })
+                    data = data.map(item => {
+                    if (item.image) {
+                        item.image = Buffer.from(item.image, 'base64').toString('binary');
+                    }
+                    return item;
+                    });
                 }
                 resolve({
                     errCode: 0,
