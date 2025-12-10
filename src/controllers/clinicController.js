@@ -15,13 +15,14 @@ let createClinic = async (req, res) =>{
 
 let getAllClinic = async (req, res) => {
   try {
-    let { page, limit, sortBy, sortOrder } = req.query;
+    let { page, limit, sortBy, sortOrder, keyword } = req.query;
 
     let info = await clinicService.getAllClinicService(
       page,
       limit,
       sortBy,
-      sortOrder
+      sortOrder,
+      keyword,
     );
 
     return res.status(200).json(info);
@@ -60,9 +61,24 @@ let handleUpdateClinic = async (req, res) =>{
     }
 }
 
+let handleDeleteClinic = async (req, res) =>{
+    try {
+        let message =  await clinicService.handleDeleteClinic(req.body.id);
+        return res.status(200).json(message);
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({
+            errCode: -1,
+            errMessage: 'Error from the server!'
+        })
+    }  
+}
+
+
 module.exports = {
     createClinic: createClinic,
     getAllClinic: getAllClinic,
     getDetailClinicById: getDetailClinicById,
     handleUpdateClinic: handleUpdateClinic,
+    handleDeleteClinic: handleDeleteClinic
 }

@@ -9,13 +9,15 @@ const router = express.Router();
 // router.post('/register', authController.register);
 
 // Đăng nhập
-router.post('/api/create-new-clinic', clinicController.createClinic);
+router.post('/', clinicController.createClinic);
 
-router.get('/api/get-clinic', clinicController.getAllClinic);
+router.get('/', clinicController.getAllClinic);
 
-router.get('/api/get-detail-clinic-by-id', clinicController.getDetailClinicById);
+router.get('/detail/', clinicController.getDetailClinicById);
 
-router.put('/', clinicController.handleUpdateClinic)
+router.put('/', clinicController.handleUpdateClinic);
+
+router.delete('/', clinicController.handleDeleteClinic);
 
 
 export default router;
