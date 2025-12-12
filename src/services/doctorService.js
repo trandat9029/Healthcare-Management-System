@@ -1,9 +1,9 @@
-import { where } from "sequelize";
+import { Op } from "sequelize";
 import db from "../models";
 import emailService from "./emailService"
 require('dotenv').config();
 import _, { reject } from "lodash";
-
+const { fn, col, where } = db.Sequelize;
 
 const MAX_NUMBER_SCHEDULE = process.env.MAX_NUMBER_SCHEDULE;
 
@@ -353,100 +353,141 @@ let getScheduleByDateService = (doctorId, date) =>{
     })
 }
 
-let handleGetAllSchedule = ({ page, limit, sortBy, sortOrder }) =>{
-    return new Promise(async (resolve, reject) => {
-        try {
-            const pageNumber = Number(page) || 1;
-            const pageSize = Number(limit) || 10;
-            const offset = (pageNumber - 1) * pageSize;
 
-            const allowedSortField = {
-                date: 'date',
-                timeType: 'timeType',
-                doctorId: 'doctorId',
-                createdAt: 'createdAt',
-            };
 
-            const sortField = allowedSortField[sortBy] || 'createdAt';
-            const sortDirection =
-                String(sortOrder).toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
 
-            let info = await db.Schedule.findAndCountAll({
-                include: [
-                    { 
-                        model: db.Allcode,
-                        as: 'timeTypeData',
-                        attributes: ['valueVi', 'valueEn']
-                    },
-                    { 
-                        model: db.User,
-                        as: 'doctorData',
-                        attributes: ['firstName', 'lastName']
-                    },
-                ],
-                raw: false,
-                nest: true,
-                limit: pageSize,
-                offset,
-                order: [[sortField, sortDirection]],
-                distinct: true,
-            });
+let handleGetAllSchedule = ({
+  page,
+  limit,
+  sortBy,
+  sortOrder,
+  timeType,
+  date,
+}) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const pageNumber = Number(page) || 1;
+      const pageSize = Number(limit) || 10;
+      const offset = (pageNumber - 1) * pageSize;
 
-            resolve(info);
-            
-        } catch (error) {
-            reject(error);
-        }
-    });
-}
+      const allowedSortField = {
+        date: 'date',
+        timeType: 'timeType',
+        doctorId: 'doctorId',
+        createdAt: 'createdAt',
+      };
 
-let handleGetScheduleByDoctor = ({doctorId, page, limit, sortBy, sortOrder }) =>{
-    return new Promise(async (resolve, reject) => {
-        try {
-            const pageNumber = Number(page) || 1;
-            const pageSize = Number(limit) || 10;
-            const offset = (pageNumber - 1) * pageSize;
+      const sortField = allowedSortField[sortBy] || 'createdAt';
+      const sortDirection =
+        String(sortOrder).toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
 
-            const allowedSortField = {
-                date: 'date',
-                timeType: 'timeType',
-                doctorId: 'doctorId',
-                createdAt: 'createdAt',
-            };
+      // where cho Schedule. chỉ filter theo timeType và date
+      const whereSchedule = {};
+      if (timeType) {
+        whereSchedule.timeType = timeType;
+      }
+      if (date) {
+        // nếu cột date lưu timestamp bigint
+        whereSchedule.date = Number(date);
+      }
 
-            const sortField = allowedSortField[sortBy] || 'createdAt';
-            const sortDirection =
-                String(sortOrder).toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
+      const info = await db.Schedule.findAndCountAll({
+        where: whereSchedule,
+        include: [
+          {
+            model: db.Allcode,
+            as: 'timeTypeData',
+            attributes: ['valueVi', 'valueEn'],
+          },
+          {
+            model: db.User,
+            as: 'doctorData',
+            attributes: ['firstName', 'lastName'],
+          },
+        ],
+        limit: pageSize,
+        offset,
+        order: [[sortField, sortDirection]],
+        raw: false,
+        nest: true,
+        distinct: true, // để count đúng khi có include
+      });
 
-            let info = await db.Schedule.findAndCountAll({
-                where: { doctorId : doctorId },
-                include: [
-                    { 
-                        model: db.Allcode,
-                        as: 'timeTypeData',
-                        attributes: ['valueVi', 'valueEn']
-                    },
-                    { 
-                        model: db.User,
-                        as: 'doctorData',
-                        attributes: ['firstName', 'lastName']
-                    },
-                ],
-                raw: false,
-                nest: true,
-                limit: pageSize,
-                offset,
-                order: [[sortField, sortDirection]],
-                distinct: true,
-            });
+      resolve(info);
+    } catch (error) {
+      reject(error);
+    }
+  });
+};
 
-            resolve(info);
-            
-        } catch (error) {
-            reject(error);
-        }
-    });
-}
+let handleGetScheduleByDoctor = ({
+  doctorId,
+  page,
+  limit,
+  sortBy,
+  sortOrder,
+  timeType,
+  date,
+}) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const pageNumber = Number(page) || 1;
+      const pageSize = Number(limit) || 10;
+      const offset = (pageNumber - 1) * pageSize;
+
+      const allowedSortField = {
+        date: 'date',
+        timeType: 'timeType',
+        doctorId: 'doctorId',
+        createdAt: 'createdAt',
+      };
+
+      const sortField = allowedSortField[sortBy] || 'createdAt';
+      const sortDirection =
+        String(sortOrder).toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
+
+      const whereSchedule = {
+        doctorId,
+      };
+
+      if (timeType) {
+        whereSchedule.timeType = timeType;
+      }
+      if (date) {
+        whereSchedule.date = Number(date);
+      }
+
+      const info = await db.Schedule.findAndCountAll({
+        where: whereSchedule,
+        include: [
+          {
+            model: db.Allcode,
+            as: 'timeTypeData',
+            attributes: ['valueVi', 'valueEn'],
+          },
+          {
+            model: db.User,
+            as: 'doctorData',
+            attributes: ['firstName', 'lastName'],
+          },
+        ],
+        limit: pageSize,
+        offset,
+        order: [[sortField, sortDirection]],
+        raw: false,
+        nest: true,
+        distinct: true,
+      });
+
+      resolve(info);
+    } catch (error) {
+      reject(error);
+    }
+  });
+};
+
+
+
 
 let getExtraInfoDoctorByIdService = (doctorId) =>{
     return new Promise( async (resolve, reject) =>{

@@ -99,61 +99,76 @@ let getScheduleByDate = async (req, res) =>{
     }
 }
 
+
+
+// GET /api/schedule
 let handleGetScheduleByDoctor = async (req, res) => {
-    try {
-        const { doctorId, page, limit, sortBy, sortOrder } = req.query;
+  try {
+    const { doctorId, page, limit, sortBy, sortOrder, timeType, date } =
+      req.query;
 
-        const result = await doctorService.handleGetScheduleByDoctor({
-            doctorId,
-            page,
-            limit,
-            sortBy,
-            sortOrder,
-        });
+    const result = await doctorService.handleGetScheduleByDoctor({
+      doctorId,
+      page,
+      limit,
+      sortBy,
+      sortOrder,
+      timeType,
+      date,
+    });
 
-        return res.status(200).json({
-            errCode: 0,
-            errMessage: 'Ok',
-            schedules: result.rows,
-            total: result.count,
-            page: Number(page) || 1,
-            limit: Number(limit) || 10,
-        });
-    } catch (error) {
-        console.log(error);
-        return res.status(500).json({
-            errCode: -1,
-            errMessage: 'Error from the server!',
-        });
-    }
+    return res.status(200).json({
+      errCode: 0,
+      errMessage: 'Ok',
+      schedules: result.rows,
+      total: result.count,
+      page: Number(page) || 1,
+      limit: Number(limit) || 10,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      errCode: -1,
+      errMessage: 'Error from the server!',
+    });
+  }
 };
 
-let handleGetAllSchedule = async (req, res) =>{
-    try {
-        
-        let { page, limit, sortBy, sortOrder } = req.query;
-        let info = await doctorService.handleGetAllSchedule({
-            page,
-            limit,
-            sortBy,
-            sortOrder,
-        });
-        return res.status(200).json({
-            errCode: 0,
-            errMessage: 'Ok',
-            schedules: info.rows,
-            total: info.count,
-            page: Number(page) || 1,
-            limit: Number(limit) || 10,
-        });
-    } catch (error) {
-        console.log(error);
-        return res.status(500).json({
-            errCode: -1,
-            errMessage: 'Error from the server!'
-        })
-    }
-}
+// GET /api/schedule/all
+let handleGetAllSchedule = async (req, res) => {
+  try {
+    let { page, limit, sortBy, sortOrder, timeType, date } = req.query;
+
+    let info = await doctorService.handleGetAllSchedule({
+      page,
+      limit,
+      sortBy,
+      sortOrder,
+      timeType,
+      date,
+    });
+
+    return res.status(200).json({
+      errCode: 0,
+      errMessage: 'Ok',
+      schedules: info.rows,
+      total: info.count,
+      page: Number(page) || 1,
+      limit: Number(limit) || 10,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      errCode: -1,
+      errMessage: 'Error from the server!',
+    });
+  }
+};
+
+
+
+
+
 
 let getExtraInfoDoctorById = async (req, res) =>{
     try {
