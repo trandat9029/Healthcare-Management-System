@@ -29,13 +29,28 @@ let postVerifyBookAppointment = async (req, res) =>{
 
 let handleGetAllBooking = async (req, res) => {
     try {
-        let { page, limit, sortBy, sortOrder } = req.query;
+        let {
+            page,
+            limit,
+            sortBy,
+            sortOrder,
+            keywordDoctor,
+            keywordPatient,
+            timeType,
+            date,
+            statusId,
+        } = req.query;
 
         let result = await patientService.handleGetAllBooking({
             page,
             limit,
             sortBy,
             sortOrder,
+            keywordDoctor,
+            keywordPatient,
+            timeType,
+            date,
+            statusId,
         });
 
         return res.status(200).json({
@@ -54,6 +69,7 @@ let handleGetAllBooking = async (req, res) => {
         });
     }
 };
+
 
 let handleGetAllBookedByPatient = async (req, res) => {
     try {

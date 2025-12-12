@@ -46,7 +46,6 @@ let getTopDoctorHome = (limitInput) => {
 };
 
 
-// doctorService.js
 let getAllDoctors = ({ page, limit, sortBy, sortOrder }) => {
     return new Promise(async (resolve, reject) => {
         try {
@@ -97,6 +96,7 @@ let getAllDoctors = ({ page, limit, sortBy, sortOrder }) => {
     });
 };
 
+
 let checkRequiredFields = (inputData) =>{
     let arrFields = ['doctorId', 'contentHTML', 'contentMarkdown', 'action', 'selectedPrice', 'selectedPayment', 'selectedProvince', 'nameClinic', 'addressClinic', 'note', 'specialtyId'];
     
@@ -115,6 +115,7 @@ let checkRequiredFields = (inputData) =>{
         element: element,
     }
 }
+
 
 let saveDetailInfoDoctor = (inputData) =>{
     return new Promise( async (resolve, reject) => {
@@ -200,6 +201,7 @@ let saveDetailInfoDoctor = (inputData) =>{
     })
 }
 
+
 let getDetailDoctorByIdService = (inputId) =>{
     return new Promise( async (resolve, reject) =>{
         try {
@@ -265,6 +267,7 @@ let getDetailDoctorByIdService = (inputId) =>{
     })
 }
 
+
 let bulkCreateScheduleService = (data) =>{
     return new Promise( async (resolve, reject) =>{
         try {
@@ -313,6 +316,7 @@ let bulkCreateScheduleService = (data) =>{
     })
 }
 
+
 let getScheduleByDateService = (doctorId, date) =>{
     return new Promise(async (resolve, reject) => {
         try {
@@ -354,139 +358,134 @@ let getScheduleByDateService = (doctorId, date) =>{
 }
 
 
-
-
 let handleGetAllSchedule = ({
-  page,
-  limit,
-  sortBy,
-  sortOrder,
-  timeType,
-  date,
+    page,
+    limit,
+    sortBy,
+    sortOrder,
+    timeType,
+    date,
 }) => {
-  return new Promise(async (resolve, reject) => {
-    try {
-      const pageNumber = Number(page) || 1;
-      const pageSize = Number(limit) || 10;
-      const offset = (pageNumber - 1) * pageSize;
+    return new Promise(async (resolve, reject) => {
+        try {
+            const pageNumber = Number(page) || 1;
+            const pageSize = Number(limit) || 10;
+            const offset = (pageNumber - 1) * pageSize;
 
-      const allowedSortField = {
-        date: 'date',
-        timeType: 'timeType',
-        doctorId: 'doctorId',
-        createdAt: 'createdAt',
-      };
+            const allowedSortField = {
+                date: 'date',
+                timeType: 'timeType',
+                doctorId: 'doctorId',
+                createdAt: 'createdAt',
+            };
 
-      const sortField = allowedSortField[sortBy] || 'createdAt';
-      const sortDirection =
-        String(sortOrder).toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
+            const sortField = allowedSortField[sortBy] || 'createdAt';
+            const sortDirection =
+                String(sortOrder).toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
 
-      // where cho Schedule. chỉ filter theo timeType và date
-      const whereSchedule = {};
-      if (timeType) {
-        whereSchedule.timeType = timeType;
-      }
-      if (date) {
-        // nếu cột date lưu timestamp bigint
-        whereSchedule.date = Number(date);
-      }
+            const whereSchedule = {};
+            if (timeType) {
+                whereSchedule.timeType = timeType;
+            }
+            if (date) {
+                whereSchedule.date = Number(date);
+            }
 
-      const info = await db.Schedule.findAndCountAll({
-        where: whereSchedule,
-        include: [
-          {
-            model: db.Allcode,
-            as: 'timeTypeData',
-            attributes: ['valueVi', 'valueEn'],
-          },
-          {
-            model: db.User,
-            as: 'doctorData',
-            attributes: ['firstName', 'lastName'],
-          },
-        ],
-        limit: pageSize,
-        offset,
-        order: [[sortField, sortDirection]],
-        raw: false,
-        nest: true,
-        distinct: true, // để count đúng khi có include
-      });
+            const info = await db.Schedule.findAndCountAll({
+                where: whereSchedule,
+                include: [
+                    {
+                        model: db.Allcode,
+                        as: 'timeTypeData',
+                        attributes: ['valueVi', 'valueEn'],
+                    },
+                    {
+                        model: db.User,
+                        as: 'doctorData',
+                        attributes: ['firstName', 'lastName'],
+                    },
+                ],
+                limit: pageSize,
+                offset,
+                order: [[sortField, sortDirection]],
+                raw: false,
+                nest: true,
+                distinct: true,
+            });
 
-      resolve(info);
-    } catch (error) {
-      reject(error);
-    }
-  });
+            resolve(info);
+        } catch (error) {
+            reject(error);
+        }
+    });
 };
+
 
 let handleGetScheduleByDoctor = ({
-  doctorId,
-  page,
-  limit,
-  sortBy,
-  sortOrder,
-  timeType,
-  date,
+    doctorId,
+    page,
+    limit,
+    sortBy,
+    sortOrder,
+    timeType,
+    date,
 }) => {
-  return new Promise(async (resolve, reject) => {
-    try {
-      const pageNumber = Number(page) || 1;
-      const pageSize = Number(limit) || 10;
-      const offset = (pageNumber - 1) * pageSize;
+    return new Promise(async (resolve, reject) => {
+        try {
+            const pageNumber = Number(page) || 1;
+            const pageSize = Number(limit) || 10;
+            const offset = (pageNumber - 1) * pageSize;
 
-      const allowedSortField = {
-        date: 'date',
-        timeType: 'timeType',
-        doctorId: 'doctorId',
-        createdAt: 'createdAt',
-      };
+            const allowedSortField = {
+                date: 'date',
+                timeType: 'timeType',
+                doctorId: 'doctorId',
+                createdAt: 'createdAt',
+            };
 
-      const sortField = allowedSortField[sortBy] || 'createdAt';
-      const sortDirection =
-        String(sortOrder).toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
+            const sortField = allowedSortField[sortBy] || 'createdAt';
+            const sortDirection =
+                String(sortOrder).toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
 
-      const whereSchedule = {
-        doctorId,
-      };
+            const whereSchedule = {
+                doctorId,
+            };
 
-      if (timeType) {
-        whereSchedule.timeType = timeType;
-      }
-      if (date) {
-        whereSchedule.date = Number(date);
-      }
+            if (timeType) {
+                whereSchedule.timeType = timeType;
+            }
+            if (date) {
+                whereSchedule.date = Number(date);
+            }
 
-      const info = await db.Schedule.findAndCountAll({
-        where: whereSchedule,
-        include: [
-          {
-            model: db.Allcode,
-            as: 'timeTypeData',
-            attributes: ['valueVi', 'valueEn'],
-          },
-          {
-            model: db.User,
-            as: 'doctorData',
-            attributes: ['firstName', 'lastName'],
-          },
-        ],
-        limit: pageSize,
-        offset,
-        order: [[sortField, sortDirection]],
-        raw: false,
-        nest: true,
-        distinct: true,
-      });
+            const info = await db.Schedule.findAndCountAll({
+                where: whereSchedule,
+                include: [
+                    {
+                        model: db.Allcode,
+                        as: 'timeTypeData',
+                        attributes: ['valueVi', 'valueEn'],
+                    },
+                    {
+                        model: db.User,
+                        as: 'doctorData',
+                        attributes: ['firstName', 'lastName'],
+                    },
+                ],
+                limit: pageSize,
+                offset,
+                order: [[sortField, sortDirection]],
+                raw: false,
+                nest: true,
+                distinct: true,
+            });
 
-      resolve(info);
-    } catch (error) {
-      reject(error);
-    }
-  });
+            resolve(info);
+        } catch (error) {
+            reject(error);
+        }
+    });
 };
-
-
 
 
 let getExtraInfoDoctorByIdService = (doctorId) =>{
@@ -524,6 +523,7 @@ let getExtraInfoDoctorByIdService = (doctorId) =>{
         }
     })
 }
+
 
 let getProfileDoctorByIdService = (inputId) =>{
     return new Promise( async (resolve, reject) =>{
@@ -633,6 +633,7 @@ let getListPatientForDoctorService = (doctorId, date) =>{
     })
 }
 
+
 let SendRemedy = (data) =>{
     return new Promise( async (resolve, reject) =>{
         try {
@@ -672,6 +673,7 @@ let SendRemedy = (data) =>{
         }
     })
 }
+
 
 module.exports = {
     getTopDoctorHome: getTopDoctorHome,
