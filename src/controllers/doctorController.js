@@ -17,34 +17,38 @@ let getTopDoctorHome = async (req, res) =>{
     }
 }
 
-// doctorController.js
+
 let getAllDoctors = async (req, res) => {
-    try {
-        let { page, limit, sortBy, sortOrder } = req.query;
+  try {
+    let { page, limit, sortBy, sortOrder, keyword, positionId } = req.query;
 
-        let result = await doctorService.getAllDoctors({
-            page,
-            limit,
-            sortBy,
-            sortOrder,
-        });
+    let result = await doctorService.getAllDoctors({
+      page,
+      limit,
+      sortBy,
+      sortOrder,
+      keyword,
+      positionId,
+    });
 
-        return res.status(200).json({
-            errCode: 0,
-            errMessage: 'Ok',
-            doctors: result.rows,
-            total: result.count,
-            page: Number(page) || 1,
-            limit: Number(limit) || 10,
-        });
-    } catch (error) {
-        console.log(error);
-        return res.status(500).json({
-            errCode: -1,
-            errMessage: 'Error from the server',
-        });
-    }
+    return res.status(200).json({
+      errCode: 0,
+      errMessage: 'Ok',
+      doctors: result.rows,
+      total: result.count,
+      page: Number(page) || 1,
+      limit: Number(limit) || 10,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      errCode: -1,
+      errMessage: 'Error from the server',
+    });
+  }
 };
+
+
 
  
 let postInfoDoctor = async (req, res) =>{

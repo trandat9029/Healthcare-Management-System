@@ -46,54 +46,57 @@ let getTopDoctorHome = (limitInput) => {
 };
 
 
-let getAllDoctors = ({ page, limit, sortBy, sortOrder }) => {
-    return new Promise(async (resolve, reject) => {
-        try {
-            const pageNumber = Number(page) || 1;
-            const pageSize = Number(limit) || 10;
-            const offset = (pageNumber - 1) * pageSize;
 
-            const allowedSortField = {
-                email: 'email',
-                firstName: 'firstName',
-                lastName: 'lastName',
-                createdAt: 'createdAt',
-            };
+let getAllDoctors = ({ page, limit, sortBy, sortOrder, keyword, positionId }) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const pageNumber = Number(page) || 1;
+      const pageSize = Number(limit) || 10;
+      const offset = (pageNumber - 1) * pageSize;
 
-            const sortField = allowedSortField[sortBy] || 'createdAt';
-            const sortDirection =
-                String(sortOrder).toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
+      const allowedSortField = {
+        email: 'email',
+        firstName: 'firstName',
+        lastName: 'lastName',
+        createdAt: 'createdAt',
+      };
 
-            let doctors = await db.User.findAndCountAll({
-                where: { roleId: 'R2' },
-                attributes: {
-                    exclude: ['password', 'image'],
-                },
-                include: [
-                    {
-                        model: db.Allcode,
-                        as: 'positionData',
-                        attributes: ['valueVi', 'valueEn'],
-                    },
-                    {
-                        model: db.Allcode,
-                        as: 'roleData',
-                        attributes: ['valueVi', 'valueEn'],
-                    },
-                ],
-                raw: true,
-                nest: true,
-                limit: pageSize,
-                offset,
-                order: [[sortField, sortDirection]],
-                distinct: true,
-            });
+      const sortField = allowedSortField[sortBy] || 'createdAt';
+      const sortDirection =
+        String(sortOrder).toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
 
-            resolve(doctors);
-        } catch (error) {
-        reject(error);
-        }
-    });
+      const whereUser = { roleId: 'R2' };
+
+      if (positionId) whereUser.positionId = positionId;
+
+      const kw = (keyword || '').trim();
+      if (kw) {
+        whereUser[Op.or] = [
+          { firstName: { [Op.like]: `%${kw}%` } },
+          { lastName: { [Op.like]: `%${kw}%` } },
+        ];
+      }
+
+      const doctors = await db.User.findAndCountAll({
+        where: whereUser,
+        attributes: { exclude: ['password', 'image'] },
+        include: [
+          { model: db.Allcode, as: 'positionData', attributes: ['valueVi', 'valueEn'] },
+          { model: db.Allcode, as: 'roleData', attributes: ['valueVi', 'valueEn'] },
+        ],
+        raw: true,
+        nest: true,
+        limit: pageSize,
+        offset,
+        order: [[sortField, sortDirection]],
+        distinct: true,
+      });
+
+      resolve(doctors);
+    } catch (error) {
+      reject(error);
+    }
+  });
 };
 
 
