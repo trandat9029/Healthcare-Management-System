@@ -21,59 +21,53 @@ let handleLogin = async (req, res) =>{
     }); 
 }
 
-
 let handleGetAllUsers = async (req, res) => {
-    try {
-        let {
-            id,
-            page,
-            limit,
-            sortBy,
-            sortOrder,
-        } = req.query;
+  try {
+    let { id, page, limit, sortBy, sortOrder, keyword, roleId } = req.query;
 
-        if (!id) {
-        return res.status(200).json({
-            errCode: 1,
-            errMessage: 'Missing required parameter id',
-            users: [],
-        });
-        }
-
-        let result = await userService.getAllUsers({
-            userId: id,
-            page,
-            limit,
-            sortBy,
-            sortOrder,
-        });
-
-        // Nếu query theo id cụ thể
-        if (id !== 'ALL') {
-        return res.status(200).json({
-            errCode: 0,
-            errMessage: 'Ok',
-            user: result,
-        });
-        }
-
-        // Nếu lấy ALL có phân trang
-        return res.status(200).json({
-            errCode: 0,
-            errMessage: 'Ok',
-            users: result.rows,
-            total: result.count,
-            page: Number(page) || 1,
-            limit: Number(limit) || 10,
-        });
-    } catch (error) {
-        console.log('handleGetAllUsers error', error);
-        return res.status(500).json({
-            errCode: -1,
-            errMessage: 'Error from server',
-        });
+    if (!id) {
+      return res.status(200).json({
+        errCode: 1,
+        errMessage: 'Missing required parameter id',
+        users: [],
+      });
     }
+
+    let result = await userService.getAllUsers({
+      userId: id,
+      page,
+      limit,
+      sortBy,
+      sortOrder,
+      keyword,
+      roleId,
+    });
+
+    if (id !== 'ALL') {
+      return res.status(200).json({
+        errCode: 0,
+        errMessage: 'Ok',
+        user: result,
+      });
+    }
+
+    return res.status(200).json({
+      errCode: 0,
+      errMessage: 'Ok',
+      users: result.rows,
+      total: result.count,
+      page: Number(page) || 1,
+      limit: Number(limit) || 10,
+    });
+  } catch (error) {
+    console.log('handleGetAllUsers error', error);
+    return res.status(500).json({
+      errCode: -1,
+      errMessage: 'Error from server',
+    });
+  }
 };
+
 
 
 let handleCreateNewUser = async (req, res) =>{

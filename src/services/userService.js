@@ -1,4 +1,4 @@
-import { where } from "sequelize";
+import { Op, where } from "sequelize";
 import db from "../models";
 import bcrypt from 'bcrypt';
 import { raw } from "body-parser";
@@ -78,74 +78,77 @@ let handleUserLogin = (email, password) =>{
     });
 }
 
-let getAllUsers = ({ userId, page, limit, sortBy, sortOrder }) => {
-    return new Promise(async (resolve, reject) => {
-        try {
-        // Nếu lấy theo id cụ thể
-        if (userId && userId !== 'ALL') {
-            let user = await db.User.findOne({
-                where: { id: userId },
-                attributes: {
-                    exclude: ['password'],
-                },
-                include: [
-                    { 
-                        model: db.Allcode, as: 'positionData', attributes: ['valueEn', 'valueVi']
-                    },
-                    { 
-                        model: db.Allcode, as: 'roleData', attributes: ['valueEn', 'valueVi']
-                    },
-
-                ],
-                raw: false,
-                nest: true
-            });
-            return resolve(user);
-        }
-
-        // Lấy danh sách có phân trang
-        const pageNumber = Number(page) || 1;
-        const pageSize = Number(limit) || 10;
-        const offset = (pageNumber - 1) * pageSize;
-
-        // Whitelist các field được phép sort
-        const allowedSortField = {
-            email: 'email',
-            firstName: 'firstName',
-            lastName: 'lastName',
-            createdAt: 'createdAt',
-        };
-
-        const sortField = allowedSortField[sortBy] || 'createdAt';
-        const sortDirection =
-            String(sortOrder).toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
-
-        let users = await db.User.findAndCountAll({
-            attributes: {
-                exclude: ['password'],
-            },
-            include: [
-                { 
-                    model: db.Allcode, as: 'positionData', attributes: ['valueEn', 'valueVi']
-                },
-                { 
-                    model: db.Allcode, as: 'roleData', attributes: ['valueEn', 'valueVi']
-                },
-
-            ],
-            raw: false,
-            nest: true,
-            limit: pageSize,
-            offset,
-            order: [[sortField, sortDirection]],
+let getAllUsers = ({ userId, page, limit, sortBy, sortOrder, keyword, roleId }) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      if (userId && userId !== 'ALL') {
+        let user = await db.User.findOne({
+          where: { id: userId },
+          attributes: { exclude: ['password'] },
+          include: [
+            { model: db.Allcode, as: 'positionData', attributes: ['valueEn', 'valueVi'] },
+            { model: db.Allcode, as: 'roleData', attributes: ['valueEn', 'valueVi'] },
+          ],
+          raw: false,
+          nest: true,
         });
+        return resolve(user);
+      }
 
-        resolve(users);
-        } catch (error) {
-        reject(error);
-        }
-    });
+      const pageNumber = Number(page) || 1;
+      const pageSize = Number(limit) || 10;
+      const offset = (pageNumber - 1) * pageSize;
+
+      const allowedSortField = {
+        email: 'email',
+        firstName: 'firstName',
+        lastName: 'lastName',
+        createdAt: 'createdAt',
+      };
+
+      const sortField = allowedSortField[sortBy] || 'createdAt';
+      const sortDirection = String(sortOrder).toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
+
+      // NEW. where condition
+      const whereCondition = {};
+
+      // filter role
+      if (roleId && roleId !== 'ALL') {
+        whereCondition.roleId = roleId;
+      }
+
+      // search keyword (email, firstName, lastName)
+      if (keyword && String(keyword).trim()) {
+        const q = `%${String(keyword).trim()}%`;
+        whereCondition[Op.or] = [
+          { email: { [Op.like]: q } },
+          { firstName: { [Op.like]: q } },
+          { lastName: { [Op.like]: q } },
+        ];
+      }
+
+      let users = await db.User.findAndCountAll({
+        where: whereCondition,
+        attributes: { exclude: ['password'] },
+        include: [
+          { model: db.Allcode, as: 'positionData', attributes: ['valueEn', 'valueVi'] },
+          { model: db.Allcode, as: 'roleData', attributes: ['valueEn', 'valueVi'] },
+        ],
+        raw: false,
+        nest: true,
+        limit: pageSize,
+        offset,
+        order: [[sortField, sortDirection]],
+      });
+
+      resolve(users);
+    } catch (error) {
+      reject(error);
+    }
+  });
 };
+
+
 
 let createNewUser = (data) =>{
     return new Promise( async (resolve, reject) =>{

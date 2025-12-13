@@ -48,8 +48,6 @@ let getAllDoctors = async (req, res) => {
   }
 };
 
-
-
  
 let postInfoDoctor = async (req, res) =>{
     try {
