@@ -14,7 +14,7 @@ const router = express.Router();
     
         router.get('/extra-info', doctorController.getExtraInfoDoctorById);
     
-        router.get('/profile', protectedRoute. doctorController.getProfileDoctorById);
+        router.get('/profile', protectedRoute, doctorController.getProfileDoctorById);
     
 
 

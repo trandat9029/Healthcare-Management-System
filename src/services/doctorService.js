@@ -270,54 +270,54 @@ let getDetailDoctorByIdService = (inputId) =>{
     })
 }
 
-
-let bulkCreateScheduleService = (data) =>{
-    return new Promise( async (resolve, reject) =>{
+let bulkCreateScheduleService = (data) => {
+    return new Promise(async (resolve, reject) => {
         try {
-            if(!data.arrSchedule || !data.doctorId || !data.formatedDate){
-                resolve({
-                    errCode: 1,
-                    errMessage: 'Missing required parameter!',
-                })
-            }else{
-                let schedule = data.arrSchedule;
-                if(schedule && schedule.length > 0){
-                    schedule = schedule.map(item => {
-                        item.maxNumber = MAX_NUMBER_SCHEDULE;
-                        return item;
-                    })
-                }
-
-                //get all existing
-                let existing = await db.Schedule.findAll(
-                    {
-                        where: {doctorId: data.doctorId, date: data.formatedDate},
-                        attributes: ['timeType', 'date', 'doctorId', 'maxNumber'],
-                        raw: true
-                    }
-                )
-
-                // compare different
-                let toCreate = _.differenceWith(schedule, existing, (a, b) =>{
-                    return a.timeType === b.timeType && +a.date === +b.date;
-                });
-
-                //crate data
-                if(toCreate && toCreate.length > 0){
-                    await db.Schedule.bulkCreate(toCreate);
-                }
-                
-                resolve({
-                    errCode: 0,
-                    errMessage: 'OK'
-                })
-            }
-
-        } catch (error) {
-            reject(error);
+        if (!data.arrSchedule || !data.doctorId || !data.formatedDate) {
+            resolve({ errCode: 1, errMessage: 'Missing required parameter!' });
+            return;
         }
-    })
-}
+
+        let schedule = data.arrSchedule || [];
+        schedule = schedule.map((item) => ({
+            ...item,
+            maxNumber: MAX_NUMBER_SCHEDULE,
+        }));
+
+        // lấy existing (cần id để xóa)
+        const existing = await db.Schedule.findAll({
+            where: { doctorId: data.doctorId, date: data.formatedDate },
+            attributes: ['id', 'timeType', 'date', 'doctorId'],
+            raw: true,
+        });
+
+        const newTimeTypes = new Set(schedule.map((s) => s.timeType));
+        const oldTimeTypes = new Set(existing.map((e) => e.timeType));
+
+        const toCreate = schedule.filter((s) => !oldTimeTypes.has(s.timeType));
+        const toDeleteIds = existing
+            .filter((e) => !newTimeTypes.has(e.timeType))
+            .map((e) => e.id);
+
+        await db.sequelize.transaction(async (t) => {
+            if (toDeleteIds.length > 0) {
+            await db.Schedule.destroy({
+                where: { id: toDeleteIds },
+                transaction: t,
+            });
+            }
+            if (toCreate.length > 0) {
+            await db.Schedule.bulkCreate(toCreate, { transaction: t });
+            }
+        });
+
+        resolve({ errCode: 0, errMessage: 'OK' });
+        } catch (error) {
+        reject(error);
+        }
+    });
+};
+
 
 
 let getScheduleByDateService = (doctorId, date) =>{

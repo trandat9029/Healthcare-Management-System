@@ -9,6 +9,6 @@ const router = express.Router();
 
             router.post('/', protectedRoute, doctorController.bulkCreateSchedule);
         
-            router.get('/api/schedule-by-date', doctorController.getScheduleByDate);
+            router.get('/schedule-by-date', doctorController.getScheduleByDate);
 
 export default router;
