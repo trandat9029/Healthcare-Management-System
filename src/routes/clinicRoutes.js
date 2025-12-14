@@ -1,23 +1,17 @@
-// routes/authRoutes.js
-
 import express from 'express';
 import clinicController from '../controllers/clinicController.js';
-
+import { protectedRoute } from '../middleware/authMiddleware';
 const router = express.Router();
 
-// Đăng ký người dùng
-// router.post('/register', authController.register);
-
-// Đăng nhập
-router.post('/', clinicController.createClinic);
+router.post('/', protectedRoute, clinicController.createClinic);
 
 router.get('/', clinicController.getAllClinic);
 
 router.get('/detail/', clinicController.getDetailClinicById);
 
-router.put('/', clinicController.handleUpdateClinic);
+router.put('/', protectedRoute, clinicController.handleUpdateClinic);
 
-router.delete('/', clinicController.handleDeleteClinic);
+router.delete('/', protectedRoute, clinicController.handleDeleteClinic);
 
 
 export default router;

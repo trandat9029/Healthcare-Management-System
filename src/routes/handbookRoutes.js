@@ -2,20 +2,20 @@
 
 import express from 'express';
 import handbookController from '../controllers/handbookController';
-
+import { protectedRoute } from '../middleware/authMiddleware';
 const router = express.Router();
 
 // Handbook routes
 
-router.post('/', handbookController.handleCreateHandbook);
+router.post('/', protectedRoute, handbookController.handleCreateHandbook);
 
-router.put('/', handbookController.handleEditHandbook);
+router.put('/', protectedRoute, handbookController.handleEditHandbook);
 
-router.delete('/', handbookController.handleDeleteHandbook);
+router.delete('/', protectedRoute, handbookController.handleDeleteHandbook);
 
-router.get('/all', handbookController.handleGetAllHandbook);
+router.get('/all', protectedRoute, handbookController.handleGetAllHandbook);
 
-router.put('/posting', handbookController.handlePostHandbook);
+router.put('/posting', protectedRoute, handbookController.handlePostHandbook);
 
 router.get('/list_posted', handbookController.handleGetListPostHandbook);
 

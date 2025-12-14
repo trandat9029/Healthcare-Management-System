@@ -1,19 +1,20 @@
 import express from 'express';
 import doctorController from '../controllers/doctorController';
+import { protectedRoute } from '../middleware/authMiddleware';
 
 const router = express.Router();
 
-     router.get('/api/top-doctor-home', doctorController.getTopDoctorHome);
+     router.get('/api/out-standing', doctorController.getTopDoctorHome);
     
         router.get('/all', doctorController.getAllDoctors);
     
-        router.post('/api/save-info-doctors', doctorController.postInfoDoctor);
+        router.post('/',protectedRoute, doctorController.postInfoDoctor);
     
-        router.get('/api/get-detail-doctor-by-id', doctorController.getDetailDoctorById);
+        router.get('/detail', doctorController.getDetailDoctorById);
     
-        router.get('/api/get-extra-info-doctor-by-id', doctorController.getExtraInfoDoctorById);
+        router.get('/extra-info', doctorController.getExtraInfoDoctorById);
     
-        router.get('/api/get-profile-doctor-by-id', doctorController.getProfileDoctorById);
+        router.get('/profile', protectedRoute. doctorController.getProfileDoctorById);
     
 
 

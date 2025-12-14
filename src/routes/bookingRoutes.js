@@ -1,16 +1,17 @@
 import express from 'express';
 import patientController from '../controllers/patientController';
 import doctorController from '../controllers/doctorController';
+import { protectedRoute } from '../middleware/authMiddleware';
 
 const router = express.Router();
 
-        router.post('/', patientController.postBookAppointment);
+        router.post('/', protectedRoute, patientController.postBookAppointment);
     
         router.post('/verify-booking', patientController.postVerifyBookAppointment);
         
-        router.post('/api/send-remedy', doctorController.sendRemedy);
+        router.post('/api/send-remedy', protectedRoute, doctorController.sendRemedy);
 
-        router.get('/', patientController.handleGetAllBooking);
+        router.get('/', protectedRoute, patientController.handleGetAllBooking);
 
         router.get('/histories', patientController.handleGetAllBookedByPatient);
 
