@@ -3,7 +3,7 @@ import doctorController from '../controllers/doctorController';
 
 const router = express.Router();
 
-        router.get('/api/get-list-patient-for-doctor', doctorController.getListPatientForDoctor);
+        router.get('/', doctorController.getListPatientForDoctor);
 
         
         

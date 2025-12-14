@@ -4,9 +4,9 @@ import doctorController from '../controllers/doctorController';
 
 const router = express.Router();
 
-        router.post('/api/patient-book-appointment', patientController.postBookAppointment);
+        router.post('/', patientController.postBookAppointment);
     
-        router.post('/api/verify-book-appointment', patientController.postVerifyBookAppointment);
+        router.post('/verify-booking', patientController.postVerifyBookAppointment);
         
         router.post('/api/send-remedy', doctorController.sendRemedy);
 

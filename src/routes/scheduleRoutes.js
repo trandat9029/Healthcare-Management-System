@@ -7,8 +7,8 @@ const router = express.Router();
 
             router.get('/', doctorController.handleGetScheduleByDoctor);
 
-            router.post('/api/bulk-create-schedule', doctorController.bulkCreateSchedule);
+            router.post('/', doctorController.bulkCreateSchedule);
         
-            router.get('/api/get-schedule-doctor-by-date', doctorController.getScheduleByDate);
+            router.get('/api/schedule-by-date', doctorController.getScheduleByDate);
 
 export default router;

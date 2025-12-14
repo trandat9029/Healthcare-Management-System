@@ -12,6 +12,8 @@ import allCodeRoutes from "./allCodeRoutes";
 import bookingRoutes from "./bookingRoutes";
 import scheduleRoutes from "./scheduleRoutes";
 
+import { protectedRoute } from '../middleware/authMiddleware';
+
 // import homeRoutes from './homeRoutes.js';
 
 const router = express.Router();

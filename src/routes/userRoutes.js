@@ -2,14 +2,17 @@
 
 import express from 'express';
 import userController from '../controllers/userController';
+import { protectedRoute } from '../middleware/authMiddleware';
 
 const router = express.Router();
 
-    router.post('/api/login', userController.handleLogin);
-    router.get('/api/get-all-users', userController.handleGetAllUsers);
-    router.post('/api/create-new-user', userController.handleCreateNewUser);
-    router.put('/api/edit-user', userController.handleEditUser);
-    router.delete('/api/delete-user', userController.handleDeleteUser);
+    // router.post('/api/login', userController.handleLogin);
+    router.get('/', userController.handleGetAllUsers);
+    router.post('/',protectedRoute , userController.handleCreateNewUser);
+    router.put('/',protectedRoute, userController.handleEditUser);
+    router.delete('/',protectedRoute, userController.handleDeleteUser);
+
+
 
 
 export default router;

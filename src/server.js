@@ -5,13 +5,19 @@ import initWebRoutes from './routes/web';
 import connectDB from './config/connectDB';
 import cors from 'cors'
 import routes from './routes/index'
+import cookieParser from 'cookie-parser';
 
 
 require('dotenv').config();
 
 let app = express();
 
-app.use(cors({ origin: true }));
+app.use(cors({
+  origin: process.env.CLIENT_URL,
+  credentials: true
+}));
+
+app.use(cookieParser());
 
 //config app
 
@@ -25,7 +31,7 @@ viewEngine(app);
 
 // Dùng route tổng hợp từ index.js
 app.use(routes);
-initWebRoutes(app);
+// initWebRoutes(app);
 
 connectDB();
 

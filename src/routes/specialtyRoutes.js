@@ -1,16 +1,18 @@
 import express from 'express';
 import specialtyController from '../controllers/specialtyController';
 
+import { protectedRoute } from '../middleware/authMiddleware';
+
 const router = express.Router();
 
-    router.post('/', specialtyController.createSpecialty);
+    router.post('/', protectedRoute, specialtyController.createSpecialty);
     
     router.get('/', specialtyController.getAllSpecialty);
     
-    router.put('/', specialtyController.handleUpdateSpecialty);
+    router.put('/', protectedRoute, specialtyController.handleUpdateSpecialty);
     
-    router.delete('/', specialtyController.handleDeleteSpecialty);
+    router.delete('/', protectedRoute, specialtyController.handleDeleteSpecialty);
     
-    router.get('/api/get-detail-specialty-by-id', specialtyController.getDetailSpecialtyById);
+    router.get('/detail', specialtyController.getDetailSpecialtyById);
 
 export default router;

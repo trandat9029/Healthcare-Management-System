@@ -5,7 +5,7 @@ const router = express.Router();
 
      router.get('/api/top-doctor-home', doctorController.getTopDoctorHome);
     
-        router.get('/api/get-all-doctors', doctorController.getAllDoctors);
+        router.get('/all', doctorController.getAllDoctors);
     
         router.post('/api/save-info-doctors', doctorController.postInfoDoctor);
     
