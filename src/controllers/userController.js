@@ -68,8 +68,6 @@ let handleGetAllUsers = async (req, res) => {
   }
 };
 
-
-
 let handleCreateNewUser = async (req, res) =>{
     let message =  await userService.createNewUser(req.body);
     return res.status(200).json(message);
@@ -77,9 +75,16 @@ let handleCreateNewUser = async (req, res) =>{
 }
 
 let handleEditUser = async (req, res) =>{
-    let data = req.body;
-    let message =  await userService.updateUserData(data);
+  try {
+    const message = await userService.updateUserData(req.body);
     return res.status(200).json(message);
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      errCode: -1,
+      errMessage: "Error from server",
+    });
+  }
 }
 
 let handleDeleteUser = async (req, res) =>{
@@ -92,6 +97,20 @@ let handleDeleteUser = async (req, res) =>{
     let message =  await userService.deleteUser(req.body.id);
     return res.status(200).json(message);
 }
+
+let handleChangePassword = async (req, res) => {
+  try {
+    const message = await userService.handleChangePassword(req.body);
+    return res.status(200).json(message);
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      errCode: -1,
+      errMessage: "Error from server",
+    });
+  }
+};
+
 
 let getAllCode = async (req, res) =>{
     try {
@@ -113,4 +132,5 @@ module.exports ={
     handleEditUser: handleEditUser,
     handleDeleteUser: handleDeleteUser,
     getAllCode: getAllCode,
+    handleChangePassword: handleChangePassword
 }

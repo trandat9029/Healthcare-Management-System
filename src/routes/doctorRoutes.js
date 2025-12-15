@@ -16,6 +16,6 @@ const router = express.Router();
     
         router.get('/profile', protectedRoute, doctorController.getProfileDoctorById);
     
-        router.post('/profile', doctorController.handleUpdateProfile)
+        router.post('/profile', protectedRoute, doctorController.handleUpdateProfile)
 
 export default router;

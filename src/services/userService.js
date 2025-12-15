@@ -149,7 +149,6 @@ let getAllUsers = ({ userId, page, limit, sortBy, sortOrder, keyword, roleId }) 
 };
 
 
-
 let createNewUser = (data) =>{
     return new Promise( async (resolve, reject) =>{
         try {
@@ -210,6 +209,63 @@ let deleteUser = (userId) =>{
     });
 }
 
+
+let handleChangePassword = (data) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+        const { id, currentPassword, newPassword } = data;
+
+        // 1. Check input
+        if (!id || !currentPassword || !newPassword) {
+            return resolve({
+                errCode: 2,
+                errMessage: "Missing required parameters!",
+            });
+        }
+
+        // 2. Find user
+        const user = await db.User.findOne({
+            where: { id },
+            raw: false,
+        });
+
+        if (!user) {
+            return resolve({
+            errCode: 1,
+            errMessage: "User not found!",
+            });
+        }
+
+        // 3. Check current password
+        const isCorrectPassword = bcrypt.compareSync(
+            currentPassword,
+            user.password
+        );
+
+        if (!isCorrectPassword) {
+            return resolve({
+            errCode: 3,
+            errMessage: "Current password is incorrect!",
+            });
+        }
+
+        // 4. Hash new password
+        const newHashedPassword = await hashUserPassword(newPassword);
+
+        // 5. Save new password
+        user.password = newHashedPassword;
+        await user.save();
+
+        return resolve({
+            errCode: 0,
+            errMessage: "Change password successfully!",
+        });
+        } catch (error) {
+        reject(error);
+        }
+    });
+};
+
 let updateUserData = (data) =>{
     return new Promise( async (resolve, reject) =>{
         try {
@@ -253,6 +309,8 @@ let updateUserData = (data) =>{
     });
 }
 
+
+
 let getAllCodeService = (typeInput) =>{
     return new Promise(async (resolve, reject) =>{
         try {
@@ -286,5 +344,5 @@ module.exports = {
     deleteUser: deleteUser,
     updateUserData: updateUserData,
     getAllCodeService: getAllCodeService,
-    
+    handleChangePassword: handleChangePassword
 }
