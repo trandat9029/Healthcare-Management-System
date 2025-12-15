@@ -55,7 +55,7 @@ let postInfoDoctor = async (req, res) =>{
         return res.status(200).json(response);
     } catch (error) {
         console.log(error);
-        return res.status(200).json({
+        return res.status(500).json({
             errCode: -1,
             errMessage: "Error from the server!",
         })
@@ -71,6 +71,19 @@ let getDetailDoctorById = async (req, res) =>{
         return res.status(500).json({
             errCode: -1,
             errMessage: 'Error from the server!'
+        })
+    }
+}
+
+let handleUpdateProfile = async (req, res) =>{
+    try {
+        let response = await doctorService.handleUpdateProfile(req.body);
+        return res.status(200).json(response);
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({
+            errCode: -1,
+            errMessage: "Error from the server!",
         })
     }
 }
@@ -233,4 +246,5 @@ module.exports = {
     sendRemedy: sendRemedy,
     handleGetAllSchedule: handleGetAllSchedule,
     handleGetScheduleByDoctor: handleGetScheduleByDoctor,
+    handleUpdateProfile: handleUpdateProfile,
 }

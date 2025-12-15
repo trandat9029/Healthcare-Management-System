@@ -45,7 +45,6 @@ let getTopDoctorHome = (limitInput) => {
 };
 
 
-
 let getAllDoctors = ({ page, limit, sortBy, sortOrder, keyword, positionId }) => {
   return new Promise(async (resolve, reject) => {
     try {
@@ -203,6 +202,162 @@ let saveDetailInfoDoctor = (inputData) =>{
     })
 }
 
+const checkRequiredFieldProfile = (inputData) => {
+  const required = [
+    "doctorId",
+    "firstName",
+    "lastName",
+    "address",
+    "phoneNumber",
+
+    "contentHTML",
+    "contentMarkdown",
+    "description",
+
+    "selectedPrice",
+    "selectedPayment",
+    "selectedProvince",
+
+    "nameClinic",
+    "addressClinic",
+
+    "selectedSpecialty",
+    "selectedClinic",
+  ];
+
+  for (let i = 0; i < required.length; i++) {
+    const key = required[i];
+    if (
+      typeof inputData[key] === "undefined" ||
+      inputData[key] === null ||
+      inputData[key] === ""
+    ) {
+      return { isValid: false, element: key };
+    }
+  }
+  return { isValid: true };
+};
+
+let handleUpdateProfile = (inputData) => {
+  return new Promise(async (resolve, reject) => {
+    const t = await db.sequelize.transaction();
+    try {
+      const checkObj = checkRequiredFieldProfile(inputData);
+      if (checkObj.isValid === false) {
+        await t.rollback();
+        return resolve({
+          errCode: 1,
+          errMessage: `Missing parameter: ${checkObj.element}`,
+        });
+      }
+
+      const doctorId = Number(inputData.doctorId);
+
+      // 1) UPDATE USER (Sequelize instance)
+      const user = await db.User.findOne({
+        where: { id: doctorId },
+        raw: false,
+        transaction: t,
+        lock: t.LOCK.UPDATE,
+      });
+
+      if (!user) {
+        await t.rollback();
+        return resolve({
+          errCode: 2,
+          errMessage: "Doctor not found!",
+        });
+      }
+
+      user.firstName = inputData.firstName;
+      user.lastName = inputData.lastName;
+      user.address = inputData.address;
+      user.phoneNumber = inputData.phoneNumber;
+
+      if (typeof inputData.image !== "undefined") user.image = inputData.image;
+      if (inputData.gender) user.gender = inputData.gender;
+      if (inputData.positionId) user.positionId = inputData.positionId;
+
+      await user.save({ transaction: t });
+
+      // 2) UPSERT MARKDOWN
+      const markdownPayload = {
+        doctorId,
+        contentHTML: inputData.contentHTML,
+        contentMarkdown: inputData.contentMarkdown,
+        description: inputData.description,
+        specialtyId: Number(inputData.selectedSpecialty),
+        clinicId: Number(inputData.selectedClinic),
+      };
+
+      const doctorMarkdown = await db.Markdown.findOne({
+        where: { doctorId },
+        raw: false,
+        transaction: t,
+        lock: t.LOCK.UPDATE,
+      });
+
+      if (doctorMarkdown) {
+        doctorMarkdown.contentHTML = markdownPayload.contentHTML;
+        doctorMarkdown.contentMarkdown = markdownPayload.contentMarkdown;
+        doctorMarkdown.description = markdownPayload.description;
+        doctorMarkdown.specialtyId = markdownPayload.specialtyId;
+        doctorMarkdown.clinicId = markdownPayload.clinicId;
+
+        await doctorMarkdown.save({ transaction: t });
+      } else {
+        await db.Markdown.create(markdownPayload, { transaction: t });
+      }
+
+      // 3) UPSERT DOCTOR_INFO
+      const doctorInfoPayload = {
+        doctorId,
+        priceId: inputData.selectedPrice,
+        paymentId: inputData.selectedPayment,
+        provinceId: inputData.selectedProvince,
+        nameClinic: inputData.nameClinic,
+        addressClinic: inputData.addressClinic,
+        note: inputData.note || "",
+        specialtyId: Number(inputData.selectedSpecialty),
+        clinicId: Number(inputData.selectedClinic),
+      };
+
+      const doctorInfo = await db.Doctor_info.findOne({
+        where: { doctorId },
+        raw: false,
+        transaction: t,
+        lock: t.LOCK.UPDATE,
+      });
+
+      if (doctorInfo) {
+        doctorInfo.priceId = doctorInfoPayload.priceId;
+        doctorInfo.paymentId = doctorInfoPayload.paymentId;
+        doctorInfo.provinceId = doctorInfoPayload.provinceId;
+        doctorInfo.nameClinic = doctorInfoPayload.nameClinic;
+        doctorInfo.addressClinic = doctorInfoPayload.addressClinic;
+        doctorInfo.note = doctorInfoPayload.note;
+        doctorInfo.specialtyId = doctorInfoPayload.specialtyId;
+        doctorInfo.clinicId = doctorInfoPayload.clinicId;
+
+        await doctorInfo.save({ transaction: t });
+      } else {
+        await db.Doctor_info.create(doctorInfoPayload, { transaction: t });
+      }
+
+      await t.commit();
+      return resolve({
+        errCode: 0,
+        errMessage: "Update profile succeed!",
+      });
+    } catch (error) {
+      await t.rollback();
+      return reject(error);
+    }
+  });
+};
+
+
+
 
 let getDetailDoctorByIdService = (inputId) =>{
     return new Promise( async (resolve, reject) =>{
@@ -226,6 +381,11 @@ let getDetailDoctorByIdService = (inputId) =>{
                         {
                             model: db.Allcode,
                             as: 'positionData',
+                            attributes: ['valueEn', 'valueVi'],
+                        },
+                        {
+                            model: db.Allcode,
+                            as: 'genderData',
                             attributes: ['valueEn', 'valueVi'],
                         },
                         {
@@ -268,6 +428,7 @@ let getDetailDoctorByIdService = (inputId) =>{
         }
     })
 }
+
 
 let bulkCreateScheduleService = (data) => {
     return new Promise(async (resolve, reject) => {
@@ -316,7 +477,6 @@ let bulkCreateScheduleService = (data) => {
         }
     });
 };
-
 
 
 let getScheduleByDateService = (doctorId, date) =>{
@@ -732,4 +892,5 @@ module.exports = {
     SendRemedy: SendRemedy,
     handleGetAllSchedule: handleGetAllSchedule,
     handleGetScheduleByDoctor: handleGetScheduleByDoctor,
+    handleUpdateProfile: handleUpdateProfile,
 }
