@@ -17,74 +17,142 @@ let buildUrlCancelEmail = (doctorId, token) => {
     return `${process.env.FRONTEND_ORIGIN}/verify-cancel-booking?token=${token}&doctorId=${doctorId}`;
 };
 
-let postBookAppointmentService = (data) =>{
-    return new Promise( async (resolve, reject) =>{
-        try {
-            if(!data.email || !data.doctorId || !data.timeType || !data.date || !data.fullName || !data.address || !data.selectedGender){
-                resolve({
-                    errCode: 1,
-                    errMessage: 'Missing required parameter!',
-                })
-            }else{
-                console.log('check data', data)
-                let token = uuidv4(); // ⇨ '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d'
+let postBookAppointmentService = (data) => {
+  return new Promise(async (resolve, reject) => {
+    const t = await db.sequelize.transaction();
+    try {
+      if (
+        !data.email ||
+        !data.doctorId ||
+        !data.timeType ||
+        !data.date ||
+        !data.fullName ||
+        !data.address ||
+        !data.selectedGender
+      ) {
+        await t.rollback();
+        return resolve({ errCode: 1, errMessage: "Missing required parameter!" });
+      }
 
-                await emailService.sendSimpleEmail({
-                    receiverEmail: data.email,
-                    language: data.language,
-                    redirectLink: buildUrlEmail(data.doctorId, token),
+      const token = uuidv4();
 
-                    fullName: data.fullName,           // hoặc ghép từ lastName firstName
-                    phoneNumber: data.phoneNumber,
-                    email: data.email,
-                    address: data.address,
-                    reason: data.reason,
-                    birthday: data.birthday,
-                    selectedGender: data.selectedGender,
-                    timeString: data.timeString,
-                    doctorName: data.doctorName,
-                    note: data.note,
-                    insuranceNumber: data.insuranceNumber,
-                })
+      // 1) Tạo hoặc lấy User trước
+      const [user] = await db.User.findOrCreate({
+        where: { email: data.email },
+        defaults: {
+          email: data.email,
+          roleId: "R3",
+          gender: data.selectedGender,
+          address: data.address,
+          firstName: data.firstName,
+          lastName: data.lastName,
+          phoneNumber: data.phoneNumber,
+        },
+        transaction: t,
+      });
 
-                // upsert patient
-                let user = await db.User.findOrCreate({
-                    where: { email : data.email },
-                    defaults: {
-                        email: data.email,
-                        roleId: 'R3',
-                        gender : data.selectedGender,
-                        address: data.address,
-                        firstName: data.firstName,
-                        lastName: data.lastName,
-                        
-                    }
-                });
-                if(user && user[0]){
-                    await db.Booking.findOrCreate({
-                        where: { patientId : user[0].id },
-                        defaults : {
-                            statusId: 'S1',
-                            doctorId: data.doctorId,
-                            patientId: user[0].id,
-                            date: data.date,
-                            timeType: data.timeType,
-                            token: token,
-                        },
-                    })
-                }
-                // create a booking record
+      // 2) Chống trùng lịch theo rule: patientId + doctorId + date + timeType
+      // Nếu đã có booking trùng slot thì rollback và trả errCode=2
+      const existed = await db.Booking.findOne({
+        where: {
+          patientId: user.id,
+          doctorId: data.doctorId,
+          date: data.date,
+          timeType: data.timeType,
+          statusId: { [Op.in]: ["S1", "S2"] }, // đang chờ hoặc đã xác nhận
+        },
+        transaction: t,
+        lock: t.LOCK.UPDATE,
+      });
 
-                resolve({
-                    errCode: 0,
-                    errMessage: 'Save info patient succeed!'
-                })
-            }
-        } catch (error) {
-            reject(error)
-        }
-    })
-}
+      if (existed) {
+        await t.rollback();
+        return resolve({ errCode: 2, errMessage: "Bạn đã đặt khung giờ này rồi." });
+      }
+
+      // 3) Gửi email sau khi chắc chắn không trùng
+      await emailService.sendSimpleEmail({
+        receiverEmail: data.email,
+        language: data.language,
+        redirectLink: buildUrlEmail(data.doctorId, token),
+
+        fullName: data.fullName,
+        phoneNumber: data.phoneNumber,
+        email: data.email,
+        address: data.address,
+        reason: data.reason,
+        birthday: data.birthday,
+        selectedGender: data.selectedGender,
+        timeString: data.timeString,
+        doctorName: data.doctorName,
+        note: data.note,
+        insuranceNumber: data.insuranceNumber,
+      });
+
+      // 4) Update User mỗi lần đặt lịch
+      await db.User.update(
+        {
+          gender: data.selectedGender,
+          address: data.address,
+          firstName: data.firstName,
+          lastName: data.lastName,
+          phoneNumber: data.phoneNumber,
+        },
+        { where: { id: user.id }, transaction: t }
+      );
+
+      // 5) Upsert Patient theo patientId = user.id
+      await db.Patient.findOrCreate({
+        where: { patientId: user.id },
+        defaults: {
+          patientId: user.id,
+          birthday: data.birthday,
+          reason: data.reason,
+          note: data.note,
+          insuranceNumber: data.insuranceNumber,
+        },
+        transaction: t,
+      });
+
+      await db.Patient.update(
+        {
+          birthday: data.birthday,
+          reason: data.reason,
+          note: data.note,
+          insuranceNumber: data.insuranceNumber,
+        },
+        { where: { patientId: user.id }, transaction: t }
+      );
+
+      // 6) Tạo booking mới
+      await db.Booking.create(
+        {
+          statusId: "S1",
+          doctorId: data.doctorId,
+          patientId: user.id,
+          date: data.date,
+          timeType: data.timeType,
+          token,
+        },
+        { transaction: t }
+      );
+
+      await t.commit();
+      return resolve({ errCode: 0, errMessage: "Save info patient succeed!" });
+    } catch (error) {
+      await t.rollback();
+
+      // Nếu bạn đã tạo unique index ở DB (cách B), trùng lịch có thể văng lỗi UniqueConstraintError
+      if (error && (error.name === "SequelizeUniqueConstraintError" || error.parent?.errno === 1062)) {
+        return resolve({ errCode: 2, errMessage: "Bạn đã đặt khung giờ này rồi." });
+      }
+
+      reject(error);
+    }
+  });
+};
+
+
 
 let postVerifyBookAppointmentService = (data) =>{
     return new Promise( async (resolve, reject) =>{

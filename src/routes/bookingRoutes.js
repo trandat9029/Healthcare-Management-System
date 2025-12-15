@@ -5,11 +5,11 @@ import { protectedRoute } from '../middleware/authMiddleware';
 
 const router = express.Router();
 
-        router.post('/', protectedRoute, patientController.postBookAppointment);
+        router.post('/', patientController.postBookAppointment);
     
         router.post('/verify-booking', patientController.postVerifyBookAppointment);
         
-        router.post('/api/send-remedy', protectedRoute, doctorController.sendRemedy);
+        router.post('/send-remedy', protectedRoute, doctorController.sendRemedy);
 
         router.get('/', protectedRoute, patientController.handleGetAllBooking);
 

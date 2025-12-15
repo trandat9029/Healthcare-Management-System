@@ -20,12 +20,15 @@ module.exports = (sequelize, DataTypes) => {
 
     //   Patient.hasMany(models.Booking, {foreignKey: 'patientId', as: 'patientData'});
 
-
+      Patient.belongsTo(models.User, {foreignKey: "patientId", targetKey: "id",});
     }
   }
   Patient.init(
     {
-      patientId: DataTypes.INTEGER,
+      patientId: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+      },
       birthday: DataTypes.STRING,
       note: DataTypes.STRING,
       reason: DataTypes.STRING,

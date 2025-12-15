@@ -1,9 +1,8 @@
-import { Op } from "sequelize";
 import db from "../models";
 import emailService from "./emailService"
 require('dotenv').config();
 import _, { reject } from "lodash";
-const { fn, col, where } = db.Sequelize;
+const { Op, fn, col, where: sequelizeWhere } = db.Sequelize;
 
 const MAX_NUMBER_SCHEDULE = process.env.MAX_NUMBER_SCHEDULE;
 
@@ -593,49 +592,91 @@ let getProfileDoctorByIdService = (inputId) =>{
 }
 
 
-let getListPatientForDoctorService = (doctorId, date) =>{
-    return new Promise( async (resolve, reject) =>{
-        try {
-            if(!doctorId || !date){
-                resolve({
-                    errCode: 1,
-                    errMessage: 'Missing required parameter!',
-                })
-            }else{
-                let data = await db.Booking.findAll({
-                    where: {
-                        doctorId: doctorId,
-                        date: date,
-                    },
-                    include: [
-                        { 
-                            model: db.User, as: 'patientData',
-                            attributes: ['email', 'firstName', 'address', 'gender'],
-                            include: [
-                                { model: db.Allcode, as: 'genderData', attributes: ['valueEn', 'valueVi'] }
-                            ]
-                        },
-                        {
-                            model: db.Allcode, as: 'timeTypeDataPatient', attributes: ['valueEn', 'valueVi'] 
-                        },
-                        {
-                            model: db.Allcode, as: 'statusData', attributes: ['valueEn', 'valueVi'] 
-                        }
-                    ],
-                    raw: false,
-                    nest: true
-                })
-                resolve({
-                    errCode: 0,
-                    data: data
-                })
-            }
-        } catch (error) {
-            reject(error)
-        }
-    })
-}
+let getListPatientForDoctorService = (query) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const { doctorId, date, timeType, statusId, keyword } = query;
 
+      if (!doctorId || !date) {
+        resolve({ errCode: 1, errMessage: "Missing required parameter!" });
+        return;
+      }
+
+      const whereBooking = { doctorId, date };
+      if (timeType) whereBooking.timeType = timeType;
+      if (statusId) whereBooking.statusId = statusId;
+
+      // keyword filter
+      const wherePatient = {};
+      const kwRaw = (keyword || "").trim().replace(/\s+/g, " "); // gộp nhiều space
+
+      if (kwRaw) {
+        const kwLike = `%${kwRaw}%`;
+        const parts = kwRaw.split(" ");
+
+        // Điều kiện match fullName theo 2 chiều:
+        // 1) lastName firstName
+        // 2) firstName lastName
+        const fullNameOr = [
+          sequelizeWhere(fn("concat", col("patientData.lastName"), " ", col("patientData.firstName")), {
+            [Op.like]: kwLike,
+          }),
+          sequelizeWhere(fn("concat", col("patientData.firstName"), " ", col("patientData.lastName")), {
+            [Op.like]: kwLike,
+          }),
+        ];
+
+        // Điều kiện match từng token trên firstName/lastName
+        const tokenAnd = parts.map((p) => {
+          const likeP = `%${p}%`;
+          return {
+            [Op.or]: [
+              { firstName: { [Op.like]: likeP } },
+              { lastName: { [Op.like]: likeP } },
+            ],
+          };
+        });
+
+        wherePatient[Op.and] = [
+          {
+            [Op.or]: [
+              ...fullNameOr,
+              // nếu muốn mở rộng: tìm cả email, phone luôn
+              { email: { [Op.like]: kwLike } },
+              { phoneNumber: { [Op.like]: kwLike } },
+            ],
+          },
+          ...tokenAnd,
+        ];
+      }
+
+      let data = await db.Booking.findAll({
+        where: whereBooking,
+        include: [
+          {
+            model: db.User,
+            as: "patientData",
+            attributes: ["email", "firstName", "lastName", "address", "gender", "phoneNumber"],
+            where: kwRaw ? wherePatient : undefined,
+            required: kwRaw ? true : false,
+            include: [
+              { model: db.Allcode, as: "genderData", attributes: ["valueEn", "valueVi"] },
+              { model: db.Patient, as: "patientInfoData", attributes: ["patientId", "birthday", "note", "reason", "insuranceNumber"] },
+            ],
+          },
+          { model: db.Allcode, as: "timeTypeDataPatient", attributes: ["valueEn", "valueVi"] },
+          { model: db.Allcode, as: "statusData", attributes: ["valueEn", "valueVi"] },
+        ],
+        raw: false,
+        nest: true,
+      });
+
+      resolve({ errCode: 0, data });
+    } catch (error) {
+      reject(error);
+    }
+  });
+};
 
 let SendRemedy = (data) =>{
     return new Promise( async (resolve, reject) =>{

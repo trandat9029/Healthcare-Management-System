@@ -195,7 +195,7 @@ let getProfileDoctorById = async (req, res) =>{
 
 let getListPatientForDoctor = async (req, res) =>{
     try {
-        let info = await doctorService.getListPatientForDoctorService(req.query.doctorId, req.query.date);
+        let info = await doctorService.getListPatientForDoctorService(req.query);
         return res.status(200).json(info);
     } catch (error) {
         console.log(error);
