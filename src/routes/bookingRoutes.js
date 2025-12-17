@@ -19,4 +19,8 @@ const router = express.Router();
 
         router.post('/cancel/verify', patientController.handleVerifyCancelBooked);
 
+        router.get('/statistical', patientController.handleGetStatisticalBooking);
+
+        router.get('/patient-by-clinic', patientController.handleGetPatientByClinic)
+
 export default router;

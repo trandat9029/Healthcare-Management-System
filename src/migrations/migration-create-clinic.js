@@ -15,6 +15,12 @@ module.exports = {
       address: {
         type: Sequelize.STRING
       },
+      countComplete: {
+        type: Sequelize.INTEGER
+      },
+      countCancel: {
+        type: Sequelize.INTEGER
+      },
       descriptionMarkdown: {
         type: Sequelize.TEXT
       },

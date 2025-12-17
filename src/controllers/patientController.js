@@ -70,7 +70,6 @@ let handleGetAllBooking = async (req, res) => {
     }
 };
 
-
 let handleGetAllBookedByPatient = async (req, res) => {
     try {
         let { page, limit, sortBy, sortOrder, email } = req.query;
@@ -151,6 +150,66 @@ let handleVerifyCancelBooked = async (req, res) =>{
     }
 }
 
+let handleGetAllPatient = async (req, res) =>{
+    try {
+        let { page, limit, sortBy, sortOrder, keyword,} = req.query;
+        let result = await patientService.handleGetAllPatient({
+            page,
+            limit,
+            sortBy,
+            sortOrder,
+            keyword,
+        });
+        return res.status(200).json({
+            errCode: 0,
+            errMessage: 'Ok',
+            patients: result.rows,
+            total: result.count,
+            page: Number(page) || 1,
+            limit: Number(limit) || 10,
+        });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({
+            errCode: -1,
+            errMessage: 'Error from the server',
+        }); 
+    }
+}
+
+
+let handleGetStatisticalBooking = async (req, res) => {
+    try {
+        const data = await patientService.handleGetStatisticalBooking();
+        return res.status(200).json({
+            errCode: 0,
+            data
+        });
+    } catch (e) {
+        console.log(e);
+        return res.status(500).json({
+            errCode: -1,
+            errMessage: 'Error from server'
+        });
+    }
+};
+
+let handleGetPatientByClinic = async (req, res) =>{
+    try {
+        const data = await patientService.handleGetPatientByClinic(req.query);
+        return res.status(200).json({
+            errCode: 0,
+            data
+        });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({
+            errCode: -1,
+            errMessage: 'Error from the server',
+        })
+    }
+}
+
 module.exports = {
     postBookAppointment: postBookAppointment,
     postVerifyBookAppointment: postVerifyBookAppointment,
@@ -158,4 +217,8 @@ module.exports = {
     handleGetAllBookedByPatient: handleGetAllBookedByPatient,
     handleSendEmailCancelBooked: handleSendEmailCancelBooked,
     handleVerifyCancelBooked: handleVerifyCancelBooked,
+    handleGetAllPatient: handleGetAllPatient,
+    handleGetStatisticalBooking: handleGetStatisticalBooking,
+    handleGetPatientByClinic: handleGetPatientByClinic,
+
 }

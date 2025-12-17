@@ -31,18 +31,19 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: false,
       },
-      addressClinic: {
+      dateOfBirth: {
         type: Sequelize.STRING,
         allowNull: false,
       },
-      nameClinic: {
-        type: Sequelize.STRING,
+      countComplete: {
+        type: Sequelize.INTEGER,
         allowNull: false,
+        defaultValue: 0
       },
       note: {
         type: Sequelize.STRING
       },
-      count: {
+      countCancel: {
         type: Sequelize.INTEGER,
         allowNull: false,
         defaultValue: 0

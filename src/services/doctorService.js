@@ -46,60 +46,67 @@ let getTopDoctorHome = (limitInput) => {
 
 
 let getAllDoctors = ({ page, limit, sortBy, sortOrder, keyword, positionId }) => {
-  return new Promise(async (resolve, reject) => {
-    try {
-      const pageNumber = Number(page) || 1;
-      const pageSize = Number(limit) || 10;
-      const offset = (pageNumber - 1) * pageSize;
+    return new Promise(async (resolve, reject) => {
+        try {
+            const pageNumber = Number(page) || 1;
+            const pageSize = Number(limit) || 10;
+            const offset = (pageNumber - 1) * pageSize;
 
-      const allowedSortField = {
-        email: 'email',
-        firstName: 'firstName',
-        lastName: 'lastName',
-        createdAt: 'createdAt',
-      };
+            const allowedSortField = {
+                email: 'email',
+                firstName: 'firstName',
+                lastName: 'lastName',
+                createdAt: 'createdAt',
+            };
 
-      const sortField = allowedSortField[sortBy] || 'createdAt';
-      const sortDirection =
-        String(sortOrder).toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
+            const sortField = allowedSortField[sortBy] || 'createdAt';
+            const sortDirection =
+                String(sortOrder).toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
 
-      const whereUser = { roleId: 'R2' };
+            const whereUser = { roleId: 'R2' };
 
-      if (positionId) whereUser.positionId = positionId;
+            if (positionId) whereUser.positionId = positionId;
 
-      const kw = (keyword || '').trim();
-      if (kw) {
-        whereUser[Op.or] = [
-          { firstName: { [Op.like]: `%${kw}%` } },
-          { lastName: { [Op.like]: `%${kw}%` } },
-        ];
-      }
+            const kw = (keyword || '').trim();
+            if (kw) {
+                whereUser[Op.or] = [
+                { firstName: { [Op.like]: `%${kw}%` } },
+                { lastName: { [Op.like]: `%${kw}%` } },
+                ];
+            }
 
-      const doctors = await db.User.findAndCountAll({
-        where: whereUser,
-        attributes: { exclude: ['password', 'image'] },
-        include: [
-          { model: db.Allcode, as: 'positionData', attributes: ['valueVi', 'valueEn'] },
-          { model: db.Allcode, as: 'roleData', attributes: ['valueVi', 'valueEn'] },
-        ],
-        raw: true,
-        nest: true,
-        limit: pageSize,
-        offset,
-        order: [[sortField, sortDirection]],
-        distinct: true,
-      });
-
-      resolve(doctors);
-    } catch (error) {
-      reject(error);
-    }
-  });
+            const doctors = await db.User.findAndCountAll({
+                where: whereUser,
+                attributes: { exclude: ['password'] },
+                include: [
+                    { model: db.Allcode, as: 'positionData', attributes: ['valueVi', 'valueEn'] },
+                    { model: db.Allcode, as: 'roleData', attributes: ['valueVi', 'valueEn'] },
+                ],
+                raw: true,
+                nest: true,
+                limit: pageSize,
+                offset,
+                order: [[sortField, sortDirection]],
+                distinct: true,
+            });
+            if (doctors.rows && doctors.rows.length > 0) {
+            doctors.rows = doctors.rows.map(item => {
+                if (item.image) {
+                item.image = Buffer.from(item.image, 'base64').toString('binary');
+                }
+                return item;
+            });
+            }
+            resolve(doctors);
+        } catch (error) {
+        reject(error);
+        }
+    });
 };
 
 
 let checkRequiredFields = (inputData) =>{
-    let arrFields = ['doctorId', 'contentHTML', 'contentMarkdown', 'action', 'selectedPrice', 'selectedPayment', 'selectedProvince', 'nameClinic', 'addressClinic', 'note', 'specialtyId'];
+    let arrFields = ['doctorId', 'contentHTML', 'contentMarkdown', 'action', 'selectedPrice', 'selectedPayment', 'selectedProvince', 'dateOfBirth',  'note', 'specialtyId'];
     
     let isValid = true;
     let element = '';
@@ -167,8 +174,7 @@ let saveDetailInfoDoctor = (inputData) =>{
                     doctorInfo.priceId = inputData.selectedPrice;
                     doctorInfo.paymentId = inputData.selectedPayment;
                     doctorInfo.provinceId = inputData.selectedProvince;
-                    doctorInfo.nameClinic = inputData.nameClinic;
-                    doctorInfo.addressClinic = inputData.addressClinic;
+                    doctorInfo.dateOfBirth = inputData.dateOfBirth;
                     doctorInfo.note = inputData.note;
                     doctorInfo.specialtyId = inputData.specialtyId;
                     doctorInfo.clinicId = inputData.clinicId;
@@ -182,8 +188,7 @@ let saveDetailInfoDoctor = (inputData) =>{
                         priceId: inputData.selectedPrice,
                         paymentId: inputData.selectedPayment,
                         provinceId: inputData.selectedProvince,
-                        nameClinic: inputData.nameClinic,
-                        addressClinic: inputData.addressClinic,
+                        dateOfBirth: inputData.dateOfBirth,
                         note: inputData.note,
                         specialtyId: inputData.specialtyId,
                         clinicId: inputData.clinicId,
@@ -218,8 +223,7 @@ const checkRequiredFieldProfile = (inputData) => {
     "selectedPayment",
     "selectedProvince",
 
-    "nameClinic",
-    "addressClinic",
+    "dateOfBirth",
 
     "selectedSpecialty",
     "selectedClinic",
@@ -357,8 +361,6 @@ let handleUpdateProfile = (inputData) => {
 };
 
 
-
-
 let getDetailDoctorByIdService = (inputId) =>{
     return new Promise( async (resolve, reject) =>{
         try {
@@ -397,10 +399,10 @@ let getDetailDoctorByIdService = (inputId) =>{
                                 'provinceId',
                                 'specialtyId',
                                 'clinicId',
-                                'nameClinic',
-                                'addressClinic',
+                                'dateOfBirth',
+                                'countComplete',
                                 'note',
-                                'count',
+                                'countCancel',
                             ],
                             include: [
                                 { model: db.Allcode, as: 'priceTypeData', attributes: ['valueEn', 'valueVi'] },
@@ -718,10 +720,10 @@ let getProfileDoctorByIdService = (inputId) =>{
                             'priceId',
                             'paymentId',
                             'provinceId',
-                            'nameClinic',
-                            'addressClinic',
+                            'dateOfBirth',
+                            'countComplete',
                             'note',
-                            'count',
+                            'countCancel',
                         ],
                         include: [
                             { model: db.Allcode, as: 'priceTypeData', attributes: ['valueEn', 'valueVi'] },
@@ -838,46 +840,77 @@ let getListPatientForDoctorService = (query) => {
   });
 };
 
-let SendRemedy = (data) =>{
-    return new Promise( async (resolve, reject) =>{
-        try {
-            if(!data.email || !data.doctorId || !data.patientId || !data.timeType){
-                resolve({
-                    errCode: 1,
-                    errMessage: 'Missing required parameter!',
-                })
-            }else{
-                
-                //update patient status
-                let appointment = await db.Booking.findOne({
-                    where: { 
-                        doctorId: data.doctorId,
-                        patientId: data.patientId,
-                        timeType: data.timeType,
-                        statusId: 'S2', 
-                    },
-                    raw: false,
-                })
 
-                if(appointment){
-                    appointment.statusId = 'S3';
-                    await appointment.save();
+let SendRemedy = (data) => {
+    return new Promise(async (resolve, reject) => {
+        const t = await db.sequelize.transaction();
+        try {
+            if (!data.email || !data.doctorId || !data.patientId || !data.timeType) {
+                await t.rollback();
+                return resolve({ errCode: 1, errMessage: "Missing required parameter!" });
+            }
+
+            // 1) Lấy đúng lịch hẹn đang ở S2
+            const appointment = await db.Booking.findOne({
+                where: {
+                    doctorId: data.doctorId,
+                    patientId: data.patientId,
+                    timeType: data.timeType,
+                    statusId: "S2",
+                },
+                raw: false,  
+                transaction: t,
+                lock: t.LOCK.UPDATE,
+            });
+
+            // Nếu không còn S2, nghĩa là đã xử lý rồi hoặc không tồn tại
+            if (!appointment) {
+                await t.rollback();
+                // có thể coi là OK để tránh user bấm lại bị lỗi
+                return resolve({ errCode: 0, errMessage: "Already finished or not found" });
+            }
+
+            // 2) Update status sang S3
+            appointment.statusId = "S3";
+            await appointment.save({ transaction: t });
+
+            // 3) Tìm doctor_info để biết clinicId
+            const doctorInfo = await db.Doctor_info.findOne({
+                where: { doctorId: data.doctorId },
+                raw: false,
+                transaction: t,
+                lock: t.LOCK.UPDATE,
+            });
+
+            // 4) Tăng count
+            if (doctorInfo) {
+                await doctorInfo.increment("countComplete", { by: 1, transaction: t });
+
+                if (doctorInfo.clinicId) {
+                await db.Clinic.increment("countComplete", {
+                    by: 1,
+                    where: { id: doctorInfo.clinicId },
+
+                    transaction: t,
+                });
                 }
 
-                //send email remedy
-                await emailService.sendAttachment(data);
-
-                resolve({
-                    errCode: 0,
-                    errMessage: 'Ok'
-                })
+                // Nếu bạn có bảng Specialty thì làm tương tự:
+                // await db.Specialty.increment("count", { by: 1, where: { id: doctorInfo.specialtyId }, transaction: t });
             }
-        } catch (error) {
-            reject(error)
-        }
-    })
-}
 
+            await t.commit();
+
+            // 5) Send email sau commit cũng được. Nếu email fail thì count vẫn đúng
+            await emailService.sendAttachment(data);
+
+            resolve({ errCode: 0, errMessage: "Ok" });
+        } catch (error) {
+        await t.rollback();
+        reject(error);
+        }
+    });
+    };
 
 module.exports = {
     getTopDoctorHome: getTopDoctorHome,
@@ -893,4 +926,5 @@ module.exports = {
     handleGetAllSchedule: handleGetAllSchedule,
     handleGetScheduleByDoctor: handleGetScheduleByDoctor,
     handleUpdateProfile: handleUpdateProfile,
+
 }

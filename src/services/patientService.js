@@ -1,10 +1,9 @@
+import { raw } from "body-parser";
 import db from "../models";
 require('dotenv').config();
-// import _ from "lodash";
 import emailService from './emailService'
-// import { v4 as uuidv4 } from 'uuid';
 const { v4: uuidv4 } = require('uuid');
-import { Op } from 'sequelize';
+import { Op, Sequelize } from 'sequelize';
 
 
 let buildUrlEmail = (doctorId, token) =>{
@@ -152,8 +151,6 @@ let postBookAppointmentService = (data) => {
   });
 };
 
-
-
 let postVerifyBookAppointmentService = (data) =>{
     return new Promise( async (resolve, reject) =>{
         try {
@@ -290,7 +287,6 @@ let handleGetAllBooking = ({
     });
 };
 
-
 let handleGetAllBookedByPatient = ({ patientId, page, limit, sortBy, sortOrder }) => {
     return new Promise(async (resolve, reject) => {
         try {
@@ -354,7 +350,6 @@ let handleGetAllBookedByPatient = ({ patientId, page, limit, sortBy, sortOrder }
     });
 };
 
-
 let handleSendEmailCancelBooked = (data) => {
     return new Promise(async (resolve, reject) => {
         try {
@@ -409,44 +404,169 @@ let handleSendEmailCancelBooked = (data) => {
 
 let handleVerifyCancelBooked = (data) => {
     return new Promise(async (resolve, reject) => {
+        const t = await db.sequelize.transaction();
         try {
         if (!data.token || !data.doctorId) {
+            await t.rollback();
             return resolve({
             errCode: 1,
-            errMessage: 'Missing required parameter!',
+            errMessage: "Missing required parameter!",
             });
         }
 
-        let appointment = await db.Booking.findOne({
+        // 1) Chỉ lấy booking còn có thể hủy (S1, S2)
+        // lock để tránh 2 request cùng lúc
+        const appointment = await db.Booking.findOne({
             where: {
-            doctorId: data.doctorId,
-            token: data.token,
-            statusId: {
-                [Op.in]: ['S1', 'S2'],   // sửa giống trên
-            },
+                doctorId: data.doctorId,
+                token: data.token,
+                statusId: { [Op.in]: ["S1", "S2"] },
             },
             raw: false,
+            transaction: t,
+            lock: t.LOCK.UPDATE,
         });
 
-        if (appointment) {
-            appointment.statusId = 'S4';
-            await appointment.save();
-
-            return resolve({
-            errCode: 0,
-            errMessage: 'Update the appointment succeed!',
-            });
-        } else {
+        if (!appointment) {
+            await t.rollback();
             return resolve({
             errCode: 2,
-            errMessage: 'Appointment has been activated or does not exist!',
+            errMessage: "Appointment has been activated or does not exist!",
             });
         }
+
+        // 2) Update trạng thái sang S4 (đã hủy)
+        appointment.statusId = "S4";
+        await appointment.save({ transaction: t });
+
+        // 3) Lấy doctor_info để biết clinicId
+        const doctorInfo = await db.Doctor_info.findOne({
+            where: { doctorId: data.doctorId },
+            transaction: t,
+            raw: false, 
+            lock: t.LOCK.UPDATE,
+        });
+
+        // 4) Cộng countCancel cho doctor_info và clinic
+        if (doctorInfo) {
+            // Doctor_info
+            await doctorInfo.increment("countCancel", { by: 1, transaction: t });
+
+            // Clinic
+            if (doctorInfo.clinicId) {
+            await db.Clinic.increment("countCancel", {
+                by: 1,
+                where: { id: doctorInfo.clinicId },
+                transaction: t,
+            });
+            }
+        }
+
+        await t.commit();
+
+        return resolve({
+            errCode: 0,
+            errMessage: "Update the appointment succeed!",
+        });
+        } catch (error) {
+        await t.rollback();
+        reject(error);
+        }
+    });
+};
+
+let handleGetAllPatient = ({ page, limit, sortBy, sortOrder, keyword }) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+        const pageNumber = Number(page) || 1;
+        const pageSize = Number(limit) || 10;
+        const offset = (pageNumber - 1) * pageSize;
+
+        const allowedSortField = {
+            email: 'email',
+            firstName: 'firstName',
+            lastName: 'lastName',
+            createdAt: 'createdAt',
+        };
+
+        const sortField = allowedSortField[sortBy] || 'createdAt';
+        const sortDirection =
+            String(sortOrder).toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
+
+        const whereUser = { roleId: 'R3' };
+
+        const kw = (keyword || '').trim();
+        if (kw) {
+            whereUser[Op.or] = [
+            { firstName: { [Op.like]: `%${kw}%` } },
+            { lastName: { [Op.like]: `%${kw}%` } },
+            ];
+        }
+
+        const patients = await db.User.findAndCountAll({
+            where: whereUser,
+            attributes: { exclude: ['password', 'image'] },
+            include: [
+                { model: db.Allcode, as: 'roleData', attributes: ['valueVi', 'valueEn'] },
+                { model: db.Patient, as: 'patientInfoData'},
+            ],
+            raw: true,
+            nest: true,
+            limit: pageSize,
+            offset,
+            order: [[sortField, sortDirection]],
+            distinct: true,
+        });
+
+        resolve(patients);
         } catch (error) {
         reject(error);
         }
     });
 };
+
+let handleGetStatisticalBooking = async () => {
+    const startDate = new Date();
+    startDate.setMonth(startDate.getMonth() - 5);
+    startDate.setDate(1);
+    startDate.setHours(0, 0, 0, 0);
+
+    const endDate = new Date();
+    endDate.setMonth(endDate.getMonth() + 1);
+    endDate.setDate(1);
+    endDate.setHours(0, 0, 0, 0);
+
+    const rows = await db.Booking.findAll({
+        attributes: [
+            [Sequelize.fn('DATE_FORMAT', Sequelize.col('createdAt'), '%m/%Y'), 'month'],
+            [Sequelize.literal(`SUM(statusId = 'S2')`), 'confirmed'],
+            [Sequelize.literal(`SUM(statusId = 'S3')`), 'finished'],
+            [Sequelize.literal(`SUM(statusId = 'S1')`), 'pending'],
+            [Sequelize.literal(`SUM(statusId = 'S4')`), 'cancelled']
+        ],
+        where: {
+            createdAt: {
+                [Op.gte]: startDate,
+                [Op.lt]: endDate
+            }
+        },
+        group: [Sequelize.fn('DATE_FORMAT', Sequelize.col('createdAt'), '%Y-%m')],
+        order: [[Sequelize.fn('DATE_FORMAT', Sequelize.col('createdAt'), '%Y-%m'), 'ASC']],
+        raw: true
+    });
+
+    return rows.map(item => ({
+        month: item.month,
+        confirmed: Number(item.confirmed || 0),
+        finished: Number(item.finished || 0),
+        pending: Number(item.pending || 0),
+        cancelled: Number(item.cancelled || 0)
+    }));
+};
+
+let handleGetPatientByClinic = async (data) =>{
+    
+}
 
 module.exports = {
     postBookAppointmentService: postBookAppointmentService,
@@ -455,4 +575,8 @@ module.exports = {
     handleGetAllBookedByPatient: handleGetAllBookedByPatient,
     handleSendEmailCancelBooked: handleSendEmailCancelBooked,
     handleVerifyCancelBooked: handleVerifyCancelBooked,
+    handleGetAllPatient:handleGetAllPatient,
+    handleGetStatisticalBooking: handleGetStatisticalBooking,
+    handleGetPatientByClinic: handleGetPatientByClinic,
+
 }
