@@ -564,9 +564,84 @@ let handleGetStatisticalBooking = async () => {
     }));
 };
 
-let handleGetPatientByClinic = async (data) =>{
-    
-}
+const getCurrentMonthRange = () => {
+  const now = new Date();
+
+  const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+  const startOfNextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1, 0, 0, 0, 0);
+
+  return {
+    startMs: startOfThisMonth.getTime(),
+    endMsExclusive: startOfNextMonth.getTime(),
+  };
+};
+
+let handleGetPatientByClinic = async (query) => {
+    const { clinicId } = query;
+
+    const { startMs, endMsExclusive } = getCurrentMonthRange();
+    const whereDoctorInfo = clinicId ? { clinicId: Number(clinicId) } : {};
+
+    const data = await db.Booking.findAll({
+        where: {
+        date: { [Op.gte]: startMs, [Op.lt]: endMsExclusive },
+        statusId: { [Op.in]: ["S3", "S4"] },
+        },
+
+        attributes: [
+        [Sequelize.col("doctorBookings->doctorInfoData.clinicId"), "clinicId"],
+
+        [
+            Sequelize.fn(
+            "DATE_FORMAT",
+            Sequelize.fn("FROM_UNIXTIME", Sequelize.literal("`Booking`.`date` / 1000")),
+            "%m/%Y"
+            ),
+            "month",
+        ],
+
+        [
+            Sequelize.fn(
+            "SUM",
+            Sequelize.literal("CASE WHEN `Booking`.`statusId` = 'S3' THEN 1 ELSE 0 END")
+            ),
+            "countComplete",
+        ],
+
+        [
+            Sequelize.fn(
+            "SUM",
+            Sequelize.literal("CASE WHEN `Booking`.`statusId` = 'S4' THEN 1 ELSE 0 END")
+            ),
+            "countCancel",
+        ],
+        ],
+
+        include: [
+        {
+            model: db.User,
+            as: "doctorBookings",
+            attributes: [],
+            required: true,
+            include: [
+            {
+                model: db.Doctor_info,
+                as: "doctorInfoData",
+                attributes: [],
+                where: whereDoctorInfo,
+                required: true,
+            },
+            ],
+        },
+        ],
+
+        group: [Sequelize.col("doctorBookings->doctorInfoData.clinicId")],
+        order: [[Sequelize.col("doctorBookings->doctorInfoData.clinicId"), "ASC"]],
+        raw: true,
+    });
+
+    return data;
+};
 
 module.exports = {
     postBookAppointmentService: postBookAppointmentService,

@@ -3,46 +3,72 @@ import emailService from "./emailService"
 require('dotenv').config();
 import _, { reject } from "lodash";
 const { Op, fn, col, where: sequelizeWhere } = db.Sequelize;
+const Sequelize = db.Sequelize;
 
 const MAX_NUMBER_SCHEDULE = process.env.MAX_NUMBER_SCHEDULE;
+
+
+const getCurrentMonthRange = () => {
+    const now = new Date();
+    const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+    const startOfNextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1, 0, 0, 0, 0);
+
+    return {
+        startMs: startOfThisMonth.getTime(),
+        endMsExclusive: startOfNextMonth.getTime(),
+    };
+};
 
 let getTopDoctorHome = (limitInput) => {
     return new Promise(async (resolve, reject) => {
         try {
-            let users = await db.User.findAll({
-                limit: limitInput,
-                where: { roleId: 'R2' },
-                order: [['createdAt', 'DESC']],
-                attributes: {
-                    exclude: ['password'],
-                    },
-                include: [
-                    { model: db.Allcode, as: 'positionData', attributes: ['valueEn', 'valueVi'] },
-                    { model: db.Allcode, as: 'genderData', attributes: ['valueEn', 'valueVi'] },
-                    { model: db.Doctor_info, as: 'doctorInfoData' },  
-                ],
-                raw: true,
-                nest: true,
-            });
+        const { startMs, endMsExclusive } = getCurrentMonthRange();
 
-            if (users && users.length > 0) {
-                users = users.map((item) => {
-                if (item.image) {
-                    item.image = Buffer.from(item.image, 'base64').toString('binary');
-                }
-                return item;
-                });
-            }
+        const users = await db.User.findAll({
+            where: { roleId: "R2" },
+            attributes: {
+            exclude: ["password"],
+            include: [
+                [Sequelize.fn("COUNT", Sequelize.col("doctorBookings.id")), "monthCompleteCount"],
+            ],
+            },
+            include: [
+            { model: db.Allcode, as: "positionData", attributes: ["valueEn", "valueVi"] },
+            { model: db.Allcode, as: "genderData", attributes: ["valueEn", "valueVi"] },
+            { model: db.Doctor_info, as: "doctorInfoData" },
 
-            resolve({
-                errCode: 0,
-                data: users,
-            });
+            {
+                model: db.Booking,
+                as: "doctorBookings",            // User.hasMany(Booking, as: 'doctorBookings')
+                attributes: [],
+                required: false,
+                where: {
+                statusId: "S3",
+                date: { [Op.gte]: startMs, [Op.lt]: endMsExclusive },
+                },
+            },
+            ],
+
+            group: ["User.id"],
+            order: [[Sequelize.literal("monthCompleteCount"), "DESC"]],
+            limit: limitInput,
+            subQuery: false,
+            raw: true,
+            nest: true,
+        });
+
+        const mapped = (users || []).map((item) => {
+            if (item.image) item.image = Buffer.from(item.image, "base64").toString("binary");
+            return item;
+        });
+
+        resolve({ errCode: 0, data: mapped });
         } catch (error) {
-            reject(error);
+        reject(error);
         }
     });
 };
+
 
 
 let getAllDoctors = ({ page, limit, sortBy, sortOrder, keyword, positionId }) => {

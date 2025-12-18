@@ -21,6 +21,5 @@ const router = express.Router();
 
         router.get('/statistical', patientController.handleGetStatisticalBooking);
 
-        router.get('/patient-by-clinic', patientController.handleGetPatientByClinic)
 
 export default router;

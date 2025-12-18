@@ -17,7 +17,6 @@ let getTopDoctorHome = async (req, res) =>{
     }
 }
 
-
 let getAllDoctors = async (req, res) => {
   try {
     let { page, limit, sortBy, sortOrder, keyword, positionId } = req.query;
@@ -48,7 +47,6 @@ let getAllDoctors = async (req, res) => {
   }
 };
 
- 
 let postInfoDoctor = async (req, res) =>{
     try {
         let response = await doctorService.saveDetailInfoDoctor(req.body);
