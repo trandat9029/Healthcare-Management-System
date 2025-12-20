@@ -74,11 +74,24 @@ let handleDeleteClinic = async (req, res) =>{
     }  
 }
 
+// let handleGetBookingByMonth = async (req, res) => {
+//     try {
+//         let info = await clinicService.handleGetBookingByMonth(req.query);
+//         return res.status(200).json(info);
+//     } catch (error) {
+//         console.log(error);
+//         return res.status(500).json({
+//         errCode: -1,
+//         errMessage: 'Error from the server!',
+//         });
+//     }
+// };
 
 module.exports = {
     createClinic: createClinic,
     getAllClinic: getAllClinic,
     getDetailClinicById: getDetailClinicById,
     handleUpdateClinic: handleUpdateClinic,
-    handleDeleteClinic: handleDeleteClinic
+    handleDeleteClinic: handleDeleteClinic,
+    // handleGetBookingByMonth: handleGetBookingByMonth,
 }

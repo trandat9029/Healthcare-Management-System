@@ -643,6 +643,74 @@ let handleGetPatientByClinic = async (query) => {
     return data;
 };
 
+
+const getDayRangeFromMs = (dateMs) => {
+    const d = new Date(Number(dateMs));
+    const start = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0).getTime();
+    const end = start + 24 * 60 * 60 * 1000;
+    return { startMs: start, endMsExclusive: end };
+};
+
+let handleGetPatientByDate = async (query) => {
+    const { date } = query;
+
+    if (!date) {
+        return { errCode: 1, errMessage: "Missing required parameter: date" };
+    }
+
+    const { startMs, endMsExclusive } = getDayRangeFromMs(date);
+
+    const rows = await db.Booking.findAll({
+        where: {
+        date: { [Op.gte]: startMs, [Op.lt]: endMsExclusive },
+        statusId: { [Op.in]: ["S3", "S4"] },
+        },
+        attributes: [
+        [Sequelize.col("doctorBookings->doctorInfoData.clinicId"), "clinicId"],
+
+        [
+            Sequelize.fn(
+            "SUM",
+            Sequelize.literal("CASE WHEN `Booking`.`statusId` = 'S3' THEN 1 ELSE 0 END")
+            ),
+            "countComplete",
+        ],
+        [
+            Sequelize.fn(
+            "SUM",
+            Sequelize.literal("CASE WHEN `Booking`.`statusId` = 'S4' THEN 1 ELSE 0 END")
+            ),
+            "countCancel",
+        ],
+        ],
+        include: [
+        {
+            model: db.User,
+            as: "doctorBookings",
+            attributes: [],
+            required: true,
+            include: [
+            {
+                model: db.Doctor_info,
+                as: "doctorInfoData",
+                attributes: [],
+                required: true,
+            },
+            ],
+        },
+        ],
+        group: [Sequelize.col("doctorBookings->doctorInfoData.clinicId")],
+        order: [[Sequelize.col("doctorBookings->doctorInfoData.clinicId"), "ASC"]],
+        raw: true,
+    });
+
+    return rows.map(r => ({
+        clinicId: Number(r.clinicId),
+        countComplete: Number(r.countComplete || 0),
+        countCancel: Number(r.countCancel || 0),
+    }));
+};
+
 module.exports = {
     postBookAppointmentService: postBookAppointmentService,
     postVerifyBookAppointmentService: postVerifyBookAppointmentService,
@@ -653,5 +721,5 @@ module.exports = {
     handleGetAllPatient:handleGetAllPatient,
     handleGetStatisticalBooking: handleGetStatisticalBooking,
     handleGetPatientByClinic: handleGetPatientByClinic,
-
+    handleGetPatientByDate: handleGetPatientByDate
 }

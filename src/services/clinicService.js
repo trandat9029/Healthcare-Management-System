@@ -227,6 +227,19 @@ let handleDeleteClinic = (inputId) =>{
     })
 }
 
+// let handleGetBookingByMonth = () => {
+//     return new Promise(async (resolve, reject) => {
+//         try {
+
+
+//         resolve({
+
+//         });
+//         } catch (error) {
+//         reject(error);
+//         }
+//     });
+// };
 
 module.exports ={
     createClinicService: createClinicService,
@@ -234,5 +247,5 @@ module.exports ={
     getDetailClinicByIdService: getDetailClinicByIdService,
     handleUpdateClinic: handleUpdateClinic,
     handleDeleteClinic: handleDeleteClinic,
-
+    // handleGetBookingByMonth: handleGetBookingByMonth,
 }

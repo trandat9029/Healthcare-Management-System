@@ -13,5 +13,6 @@ router.put('/', protectedRoute, clinicController.handleUpdateClinic);
 
 router.delete('/', protectedRoute, clinicController.handleDeleteClinic);
 
+// router.get('/statistical-by-month', clinicController.handleGetBookingByMonth);
 
 export default router;

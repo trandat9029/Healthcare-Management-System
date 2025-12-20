@@ -210,6 +210,17 @@ let handleGetPatientByClinic = async (req, res) =>{
     }
 }
 
+let handleGetPatientByDate = async (req, res) => {
+    try {
+        const data = await patientService.handleGetPatientByDate(req.query);
+        return res.status(200).json({ errCode: 0, data });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ errCode: -1, errMessage: 'Error from the server' });
+    }
+};
+
+
 module.exports = {
     postBookAppointment: postBookAppointment,
     postVerifyBookAppointment: postVerifyBookAppointment,
@@ -220,5 +231,5 @@ module.exports = {
     handleGetAllPatient: handleGetAllPatient,
     handleGetStatisticalBooking: handleGetStatisticalBooking,
     handleGetPatientByClinic: handleGetPatientByClinic,
-
+    handleGetPatientByDate: handleGetPatientByDate,
 }

@@ -10,4 +10,6 @@ const router = express.Router();
 
         router.get('/patient-by-clinic', patientController.handleGetPatientByClinic);
 
+        router.get('/patient-by-date', patientController.handleGetPatientByDate);
+
 export default router;
