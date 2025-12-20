@@ -247,8 +247,36 @@ let sendCancelEmail = async (dataSend) => {
 };
 
 
+let sendOtpEmail = async (receiverEmail, otp) => {
+  let transporter = nodemailer.createTransport({
+    host: "smtp.gmail.com",
+    port: 587,
+    secure: false,
+    auth: {
+      user: process.env.EMAIL_APP,
+      pass: process.env.EMAIL_APP_PASSWORD,
+    },
+  });
+
+  const html = `
+    <h3>BookingHealth. Mã OTP đặt lại mật khẩu</h3>
+    <p>Mã OTP của bạn là: <b style="font-size:18px">${otp}</b></p>
+    <p>Mã có hiệu lực trong 5 phút.</p>
+    <p>Nếu bạn không yêu cầu. vui lòng bỏ qua email này.</p>
+  `;
+
+  await transporter.sendMail({
+    from: '"BookingHealth" <tranledatvp@gmail.com>',
+    to: receiverEmail,
+    subject: "OTP đặt lại mật khẩu",
+    html,
+  });
+};
+
+
 module.exports = {
     sendSimpleEmail: sendSimpleEmail,
     sendAttachment: sendAttachment,
     sendCancelEmail: sendCancelEmail,
+    sendOtpEmail: sendOtpEmail
 }

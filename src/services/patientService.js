@@ -16,6 +16,8 @@ let buildUrlCancelEmail = (doctorId, token) => {
     return `${process.env.FRONTEND_ORIGIN}/verify-cancel-booking?token=${token}&doctorId=${doctorId}`;
 };
 
+
+
 let postBookAppointmentService = (data) => {
   return new Promise(async (resolve, reject) => {
     const t = await db.sequelize.transaction();

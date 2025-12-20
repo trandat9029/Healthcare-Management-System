@@ -127,8 +127,41 @@ const handleLogout = async (req, res) => {
   }
 };
 
+let handleSendOtp = async (req, res) => {
+  try {
+    const result = await authService.sendForgotPasswordOtp(req.body.email);
+    return res.status(200).json(result);
+  } catch (e) {
+    console.log(e);
+    return res.status(500).json({ errCode: -1, errMessage: "Error from server" });
+  }
+};
+
+let handleVerifyOtp = async (req, res) => {
+  try {
+    const result = await authService.verifyForgotPasswordOtp(req.body);
+    return res.status(200).json(result);
+  } catch (e) {
+    console.log(e);
+    return res.status(500).json({ errCode: -1, errMessage: "Error from server" });
+  }
+};
+
+let handleResetPassword = async (req, res) => {
+  try {
+    const result = await authService.resetForgotPassword(req.body);
+    return res.status(200).json(result);
+  } catch (e) {
+    console.log(e);
+    return res.status(500).json({ errCode: -1, errMessage: "Error from server" });
+  }
+};
+
 export default {
   handleLogin,
   handleRefreshToken,
-  handleLogout
+  handleLogout, 
+  handleSendOtp,
+  handleVerifyOtp,
+  handleResetPassword,
 };

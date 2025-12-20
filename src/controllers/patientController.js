@@ -221,6 +221,7 @@ let handleGetPatientByDate = async (req, res) => {
 };
 
 
+
 module.exports = {
     postBookAppointment: postBookAppointment,
     postVerifyBookAppointment: postVerifyBookAppointment,
