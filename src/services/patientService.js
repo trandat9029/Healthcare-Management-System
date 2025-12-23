@@ -327,7 +327,13 @@ let handleGetAllBookedByPatient = ({ patientId, page, limit, sortBy, sortOrder }
                 model: db.User,
                 as: 'patientData',     
                 attributes: ['id','email', 'firstName', 'lastName','address', 'phoneNumber'],
-                
+                include: [
+                {
+                    model: db.Patient,
+                    as: 'patientInfoData',
+                    attributes: ['birthday', 'note', "reason", "insuranceNumber"],
+                },
+                ],
             },
             {
                 model: db.Allcode,
