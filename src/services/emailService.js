@@ -273,10 +273,91 @@ let sendOtpEmail = async (receiverEmail, otp) => {
   });
 };
 
+let getBodyHTMLEmailCancelByDoctor = (dataSend) => {
+  let result = "";
+
+  if (dataSend.language === "vi") {
+    result = `
+      <h3>Thông báo hủy lịch khám</h3>
+      <p>Xin chào <b>${dataSend.fullName}</b>,</p>
+
+      <p>
+        Lịch khám của bạn với bác sĩ <b>${dataSend.doctorName}</b>
+        vào khung giờ <b>${dataSend.timeString}</b>
+        đã được <b>bác sĩ hủy</b>.
+      </p>
+
+      <p>
+        Chúng tôi thành thật xin lỗi vì sự bất tiện này.
+        Vui lòng đặt lại lịch khám khác nếu bạn có nhu cầu.
+      </p>
+
+      <p>Xin cảm ơn.</p>
+    `;
+  }
+
+  if (dataSend.language === "en") {
+    result = `
+      <h3>Appointment Cancellation Notice</h3>
+      <p>Dear <b>${dataSend.fullName}</b>,</p>
+
+      <p>
+        Your appointment with Dr. <b>${dataSend.doctorName}</b>
+        at <b>${dataSend.timeString}</b>
+        has been <b>cancelled by the doctor</b>.
+      </p>
+
+      <p>
+        We sincerely apologize for the inconvenience.
+        Please feel free to book another appointment if needed.
+      </p>
+
+      <p>Thank you.</p>
+    `;
+  }
+
+  return result;
+};
+
+/**
+ * GỬI EMAIL HỦY DO BÁC SĨ
+ */
+let sendCancelEmailByDoctor = async (dataSend) => {
+  try {
+    let transporter = nodemailer.createTransport({
+      host: "smtp.gmail.com",
+      port: 587,
+      secure: false,
+      auth: {
+        user: process.env.EMAIL_APP,
+        pass: process.env.EMAIL_APP_PASSWORD,
+      },
+    });
+
+    await transporter.sendMail({
+      from: '"BookingHealth" <tranledatvp@gmail.com>',
+      to: dataSend.receiverEmail,
+      subject:
+        dataSend.language === "vi"
+          ? "Xác nhận hủy lịch khám bệnh"
+          : "Confirm appointment cancellation",
+      html: getBodyHTMLEmailCancelByDoctor(dataSend),
+    });
+
+    return true;
+  } catch (e) {
+    console.log("Send cancel email by doctor error:", e);
+    throw e;
+  }
+};
+
+
+
 
 module.exports = {
     sendSimpleEmail: sendSimpleEmail,
     sendAttachment: sendAttachment,
     sendCancelEmail: sendCancelEmail,
-    sendOtpEmail: sendOtpEmail
+    sendOtpEmail: sendOtpEmail,
+    sendCancelEmailByDoctor: sendCancelEmailByDoctor
 }

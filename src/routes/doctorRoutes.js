@@ -16,6 +16,8 @@ const router = express.Router();
 
         router.get("/profile", protectedRoute, doctorController.getProfileDoctorById);
 
-        router.post("/profile", protectedRoute, doctorController.handleUpdateProfile);
+        router.put("/profile", protectedRoute, doctorController.handleUpdateProfile);
+
+        router.post('/cancel-booking', doctorController.handleCancelBooked);
 
 export default router;
