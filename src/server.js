@@ -6,6 +6,7 @@ import connectDB from './config/connectDB';
 import cors from 'cors'
 import routes from './routes/index'
 import cookieParser from 'cookie-parser';
+import { expirePendingBookingsJob } from './jobs/expireBookings';
 
 
 require('dotenv').config();
@@ -34,7 +35,9 @@ app.use(routes);
 // initWebRoutes(app);
 
 connectDB();
-
+setInterval(() => {
+  expirePendingBookingsJob();
+}, 60 * 1000);
 //port === undefined => port = 8080
 let port = process.env.PORT || 8080;
 app.listen(port, ()=>{

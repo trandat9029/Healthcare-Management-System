@@ -24,7 +24,7 @@ module.exports = (sequelize, DataTypes) => {
       date: DataTypes.STRING,
       timeType: DataTypes.STRING,
       token: DataTypes.STRING,
-
+      expiresAt: DataTypes.DATE,
     },
     {
       sequelize,
